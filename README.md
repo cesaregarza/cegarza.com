@@ -101,5 +101,5 @@ In non-debug mode, the app now defaults to stricter security behavior (SSL redir
 
 Push to `main` triggers the CI/CD pipeline:
 1. Builds Docker image → DigitalOcean Container Registry
-2. Creates PR to update Helm values in SplatTopConfig
+2. Creates PR to update Helm values in GarzAICluster
 3. ArgoCD syncs deployment to Kubernetes
