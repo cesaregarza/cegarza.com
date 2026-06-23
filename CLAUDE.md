@@ -104,14 +104,14 @@ When reviewing PRs, check for:
 
 ---
 
-# Deployment Infrastructure (SplatTopConfig)
+# Deployment Infrastructure (GarzAICluster)
 
-This project deploys to Kubernetes via the `SplatTopConfig` GitOps repository at `~/dev/SplatTopConfig`.
+This project deploys to Kubernetes via the `GarzAICluster` GitOps repository at `~/dev/GarzAICluster`.
 
-## SplatTopConfig Structure
+## GarzAICluster Structure
 
 ```
-SplatTopConfig/
+GarzAICluster/
 ├── helm/
 │   ├── splattop/          # Main SplatTop app (FastAPI + React)
 │   ├── splatvote/         # Voting system
@@ -213,7 +213,7 @@ metadata:
 spec:
   project: splattop
   source:
-    repoURL: https://github.com/cesaregarza/SplatTopConfig.git
+    repoURL: https://github.com/cesaregarza/GarzAICluster.git
     targetRevision: main
     path: helm/myapp
     helm:
@@ -269,7 +269,7 @@ kubectl create secret generic blog-db-secrets \
 ## CI/CD Flow
 
 1. Push to `main` → GitHub Actions builds Docker image → DO Container Registry
-2. Action creates PR to SplatTopConfig updating image tag
+2. Action creates PR to GarzAICluster updating image tag
 3. Merge PR → ArgoCD detects change → syncs to Kubernetes
 
 ## Template Helpers (_helpers.tpl)

@@ -162,7 +162,7 @@ jobs:
       - name: Checkout config repository
         uses: actions/checkout@v4
         with:
-          repository: cesaregarza/SplatTopConfig
+          repository: cesaregarza/GarzAICluster
           token: ${{ fromJson(steps.broker.outputs.secrets-json).CONFIG_REPO_TOKEN }}
           path: config-repo
           ref: main
