@@ -4,17 +4,20 @@ from unittest import TestCase
 from unittest.mock import Mock, patch
 
 from django.core.exceptions import ValidationError
+from django.db.transaction import TransactionManagementError
 from django.http import HttpResponse
-from django.test import RequestFactory
+from django.test import RequestFactory, override_settings
 from django.test import TestCase as DjangoTestCase
 from wagtail.models import PageViewRestriction
 
+from blog.context_processors import site_identity
+from blog.feeds import BlogFeed
 from blog.markdown_extensions.random_choice import RandomChoicePreprocessor
 from blog.middleware import FrontendSecurityHeadersMiddleware
 from blog.models import AppletEmbedBlock, BlogPage, precompute_blog_body_render_cache
 from blog.robots import robots_txt
 from blog.templatetags.blog_sanitize import sanitize_html
-from blog.views import _enforce_view_restrictions, _render_block
+from blog.views import _enforce_view_restrictions, _render_block, custom_500
 
 
 class TestRobotsTxt(TestCase):
@@ -28,6 +31,57 @@ class TestRobotsTxt(TestCase):
         self.assertIn("Disallow: /health/", body)
         self.assertIn("Disallow: /*.md$", body)
         self.assertIn("Sitemap: https://blog.example.com/sitemap.xml", body)
+
+
+class TestDeploymentSiteIdentity(TestCase):
+    @patch("blog.context_processors.Site.find_for_request", return_value=None)
+    @patch("blog.context_processors.settings")
+    def test_context_uses_deployment_identity(self, settings_mock, _site_mock):
+        settings_mock.SITE_NAME = "Example Notes"
+        settings_mock.SITE_DESCRIPTION = "Example description"
+        settings_mock.SITE_AUTHOR = "Example Author"
+        settings_mock.WAGTAILADMIN_BASE_URL = "https://example.test/admin/"
+
+        context = site_identity(RequestFactory().get("/"))
+
+        self.assertEqual(context["site_name"], "Example Notes")
+        self.assertEqual(context["site_description"], "Example description")
+        self.assertEqual(context["site_author"], "Example Author")
+        self.assertEqual(
+            context["wagtail_admin_base_url"],
+            "https://example.test/admin/",
+        )
+
+    @override_settings(
+        SITE_NAME="Fallback Notes",
+        SITE_DESCRIPTION="Fallback description",
+        SITE_AUTHOR="Fallback Author",
+    )
+    @patch(
+        "blog.context_processors.Site.find_for_request",
+        side_effect=TransactionManagementError("transaction is broken"),
+    )
+    def test_500_template_uses_defaults_when_site_database_lookup_fails(
+        self,
+        _site_mock,
+    ):
+        response = custom_500(RequestFactory().get("/"))
+        content = response.content.decode("utf-8")
+
+        self.assertEqual(response.status_code, 500)
+        self.assertIn("500 - Server Error | Fallback Notes", content)
+        self.assertIn('content="Fallback Author"', content)
+
+    @patch("blog.context_processors.settings")
+    def test_feed_uses_deployment_identity(self, settings_mock):
+        settings_mock.SITE_NAME = "Example Notes"
+        settings_mock.SITE_DESCRIPTION = "Example description"
+        settings_mock.SITE_AUTHOR = "Example Author"
+
+        feed = BlogFeed()
+
+        self.assertEqual(feed.title(None), "Example Notes")
+        self.assertEqual(feed.description(None), "Example description")
 
 
 class TestRandomChoiceDeterminism(TestCase):
@@ -49,6 +103,29 @@ class TestRawHtmlSanitization(TestCase):
         self.assertNotIn("<script", output.lower())
         self.assertNotIn("onclick", output.lower())
         self.assertIn(">Safe<", output)
+
+    @patch("blog.html_sanitizer.settings.ALLOWED_EMBED_HOSTS", ["embed.example"])
+    def test_iframe_source_rejects_backslashes_and_userinfo(self):
+        poisoned_sources = [
+            r"https://embed.example\@evil.example/applet",
+            r"https://embed.example\evil/applet",
+            "https://attacker@embed.example/applet",
+        ]
+        for source in poisoned_sources:
+            with self.subTest(source=source):
+                output = str(sanitize_html(f'<iframe src="{source}" title="unsafe"></iframe>'))
+                self.assertNotIn("<iframe", output)
+
+    @patch("blog.html_sanitizer.settings.ALLOWED_EMBED_HOSTS", ["embed.example"])
+    def test_iframe_source_is_canonicalized_before_rendering(self):
+        output = str(
+            sanitize_html('<iframe src="HTTPS://EMBED.EXAMPLE:443/applet?a=1&amp;b=2"></iframe>')
+        )
+        self.assertIn(
+            'src="https://embed.example/applet?a=1&amp;b=2"',
+            output,
+        )
+        self.assertIn('sandbox="allow-forms allow-popups allow-scripts"', output)
 
     def test_markdown_export_strips_raw_html_tags(self):
         block = SimpleNamespace(block_type="raw_html", value="<p>Hello <strong>world</strong></p>")
@@ -136,6 +213,10 @@ class TestBlogPageModelFields(TestCase):
         field_names = {field.name for field in BlogPage._meta.get_fields()}
         self.assertIn("featured_image", field_names)
         self.assertIn("social_image", field_names)
+        self.assertIn("ghost_id", field_names)
+        self.assertIn("ghost_uuid", field_names)
+        self.assertIn("authors", field_names)
+        self.assertIn("tags", field_names)
 
 
 class TestBlogPageRenderCaching(DjangoTestCase):
@@ -184,9 +265,10 @@ class TestBlogPageRenderCaching(DjangoTestCase):
             "readtime_deep": "6 min",
         }
 
-        with patch("blog.models.render_blog_body", return_value=payload) as render_mock, patch(
-            "blog.models.BlogPage.objects.filter"
-        ) as filter_mock:
+        with (
+            patch("blog.models.render_blog_body", return_value=payload) as render_mock,
+            patch("blog.models.BlogPage.objects.filter") as filter_mock,
+        ):
             precompute_blog_body_render_cache(sender=BlogPage, instance=page)
 
         render_mock.assert_called_once()

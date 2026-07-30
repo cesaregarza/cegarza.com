@@ -1,0 +1,13 @@
+.env
+.env.*
+.git
+.github
+.pytest_cache
+.ruff_cache
+.venv
+**/__pycache__
+**/*.py[cod]
+src/db.sqlite3
+src/staticfiles
+src/media/*
+!src/media/.gitkeep

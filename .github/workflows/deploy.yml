@@ -19,9 +19,7 @@ on:
       - ".version"
 
 permissions:
-  contents: write
-  id-token: write
-  packages: write
+  contents: read
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -35,6 +33,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     environment: SplatTop
+    permissions:
+      contents: read
+      id-token: write
     outputs:
       image_tag: v${{ steps.nextver.outputs.version }}
       image_digest: ${{ steps.build.outputs.digest }}
@@ -48,7 +49,7 @@ jobs:
 
       - name: Fetch deployment credentials
         id: broker
-        uses: cesaregarza/.github/actions/fetch-broker-credentials@main
+        uses: cesaregarza/.github/actions/fetch-broker-credentials@a1d2fb4a6b288066574b1ac53074ac62e920a07f
         with:
           broker-url: https://credentials.garz.ai
           audience: https://credentials.garz.ai/v1
@@ -150,10 +151,13 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: SplatTop
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Fetch deployment credentials
         id: broker
-        uses: cesaregarza/.github/actions/fetch-broker-credentials@main
+        uses: cesaregarza/.github/actions/fetch-broker-credentials@a1d2fb4a6b288066574b1ac53074ac62e920a07f
         with:
           broker-url: https://credentials.garz.ai
           audience: https://credentials.garz.ai/v1

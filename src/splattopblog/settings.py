@@ -75,7 +75,9 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = get_env_bool(
     default=not DEBUG,
 )
 SECURE_HSTS_PRELOAD = get_env_bool("SECURE_HSTS_PRELOAD", default=False)
-SECURE_CROSS_ORIGIN_OPENER_POLICY = os.environ.get("SECURE_CROSS_ORIGIN_OPENER_POLICY", "same-origin")
+SECURE_CROSS_ORIGIN_OPENER_POLICY = os.environ.get(
+    "SECURE_CROSS_ORIGIN_OPENER_POLICY", "same-origin"
+)
 SECURE_CROSS_ORIGIN_RESOURCE_POLICY = os.environ.get(
     "SECURE_CROSS_ORIGIN_RESOURCE_POLICY",
     "same-origin",
@@ -89,6 +91,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "django.contrib.sitemaps",
     "django.contrib.staticfiles",
     # Wagtail apps
     "wagtail.contrib.forms",
@@ -128,7 +131,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "wagtail.contrib.redirects.middleware.RedirectMiddleware",
+    "blog.middleware.SiteAwareRedirectMiddleware",
 ]
 
 ROOT_URLCONF = "splattopblog.urls"
@@ -144,6 +147,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "blog.context_processors.site_identity",
             ],
         },
     },
@@ -174,6 +178,8 @@ def parse_database_url(database_url: str) -> dict:
     options: dict[str, str] = {}
     if "sslmode" in query:
         options["sslmode"] = query["sslmode"][0]
+    if "sslrootcert" in query:
+        options["sslrootcert"] = query["sslrootcert"][0]
     if "options" in query:
         options["options"] = query["options"][0]
     if options:
@@ -231,6 +237,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 # DigitalOcean Spaces configuration (S3-compatible object storage)
 USE_SPACES = os.environ.get("USE_SPACES", "false").lower() == "true"
+AWS_S3_FILE_OVERWRITE = False
 
 if USE_SPACES:
     # DO Spaces credentials
@@ -255,6 +262,7 @@ if USE_SPACES:
         "default": {
             "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
             "OPTIONS": {
+                "file_overwrite": False,
                 "location": "media",
             },
         },
@@ -285,8 +293,21 @@ else:
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Wagtail settings
-WAGTAIL_SITE_NAME = "SplatTop Blog"
-WAGTAILADMIN_BASE_URL = os.environ.get("WAGTAILADMIN_BASE_URL", "http://localhost:8000")
+SITE_NAME = get_env("SITE_NAME", "WAGTAIL_SITE_NAME", default="SplatTop Blog")
+SITE_DESCRIPTION = get_env(
+    "SITE_DESCRIPTION",
+    default="SplatTop blog posts and analysis.",
+)
+SITE_AUTHOR = get_env("SITE_AUTHOR", "SITE_AUTHOR_NAME", default="SplatTop")
+WAGTAIL_SITE_NAME = SITE_NAME
+WAGTAILADMIN_BASE_URL = get_env(
+    "WAGTAILADMIN_BASE_URL",
+    default="http://localhost:8000",
+)
+ALLOWED_EMBED_HOSTS = get_env_list(
+    "ALLOWED_EMBED_HOSTS",
+    "cesaregarza.github.io",
+)
 
 # Search backend
 WAGTAILSEARCH_BACKENDS = {

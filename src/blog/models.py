@@ -5,15 +5,18 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import models
 from django.dispatch import receiver
+from modelcluster.fields import ParentalManyToManyField
 from wagtail import blocks
 from wagtail.admin.panels import FieldPanel, HelpPanel
 from wagtail.fields import StreamField
 from wagtail.images.blocks import ImageChooserBlock
-from wagtail.models import Page
+from wagtail.models import Page, Site
 from wagtail.signals import page_published
+from wagtail.snippets.models import register_snippet
 from wagtailmarkdown.blocks import MarkdownBlock
 
 from .post_processing import format_minutes, render_blog_body
+from .site_urls import page_path_for_site
 
 
 class CodeBlock(blocks.StructBlock):
@@ -144,9 +147,7 @@ class AppletEmbedBlock(blocks.StructBlock):
         cleaned = super().clean(value)
         src = (cleaned.get("src") or "").strip()
         if not src.startswith("/static/applets/"):
-            raise ValidationError(
-                {"src": "Applet source must start with /static/applets/."}
-            )
+            raise ValidationError({"src": "Applet source must start with /static/applets/."})
         if src.startswith("//"):
             raise ValidationError({"src": "Protocol-relative URLs are not allowed."})
         return cleaned
@@ -206,21 +207,104 @@ class CollapsibleBlock(blocks.StructBlock):
         template = "blog/blocks/collapsible_block.html"
 
 
+@register_snippet
+class BlogAuthor(models.Model):
+    """An author imported from Ghost or maintained in Wagtail."""
+
+    ghost_id = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True)
+    bio = models.TextField(blank=True)
+    website = models.URLField(blank=True)
+
+    panels = [
+        FieldPanel("name"),
+        FieldPanel("slug"),
+        FieldPanel("bio"),
+        FieldPanel("website"),
+    ]
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+@register_snippet
+class BlogTag(models.Model):
+    """A tag imported from Ghost or maintained in Wagtail."""
+
+    ghost_id = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True)
+    description = models.TextField(blank=True)
+
+    panels = [
+        FieldPanel("name"),
+        FieldPanel("slug"),
+        FieldPanel("description"),
+    ]
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class GhostContentFields(models.Model):
+    """Stable Ghost identity and timestamps used for repeatable imports."""
+
+    ghost_id = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    ghost_uuid = models.UUIDField(unique=True, null=True, blank=True)
+    ghost_created_at = models.DateTimeField(null=True, blank=True)
+    ghost_updated_at = models.DateTimeField(null=True, blank=True)
+    ghost_published_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+
+class GhostImageImport(models.Model):
+    """Maps a Ghost media path to one Wagtail image for importer idempotence."""
+
+    ghost_path = models.CharField(max_length=1024, unique=True)
+    image = models.ForeignKey(
+        "wagtailimages.Image",
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
+    source_sha256 = models.CharField(max_length=64)
+
+    class Meta:
+        ordering = ["ghost_path"]
+
+    def __str__(self):
+        return self.ghost_path
+
+
 class BlogIndexPage(Page):
     """Blog listing page."""
 
     intro = models.TextField(blank=True)
+    default_author_name = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Default author name for site metadata and unattributed posts.",
+    )
 
     content_panels = Page.content_panels + [
         FieldPanel("intro"),
+        FieldPanel("default_author_name"),
     ]
 
-    subpage_types = ["blog.BlogPage"]
+    subpage_types = ["blog.BlogPage", "blog.ContentPage"]
     parent_page_types = ["home.HomePage"]
 
     def get_context(self, request):
         context = super().get_context(request)
-        posts = self.get_children().live().specific().order_by("-first_published_at")
+        posts = BlogPage.objects.child_of(self).live().public().order_by("-first_published_at")
         paginator = Paginator(posts, 9)
         page_number = request.GET.get("page")
         page_obj = paginator.get_page(page_number)
@@ -234,10 +318,14 @@ class BlogIndexPage(Page):
         verbose_name = "Blog Index"
 
 
-class BlogPage(Page):
+class BlogPage(GhostContentFields, Page):
     """Individual blog post page."""
 
     date = models.DateField("Post date", null=True, blank=True)
+    is_featured = models.BooleanField(
+        default=False,
+        help_text="Feature this post in editorial selections.",
+    )
     featured_image = models.ForeignKey(
         "wagtailimages.Image",
         null=True,
@@ -257,6 +345,16 @@ class BlogPage(Page):
     abstract = models.TextField(
         blank=True,
         help_text="Optional abstract/summary used for OpenGraph and meta descriptions.",
+    )
+    authors = ParentalManyToManyField(
+        "blog.BlogAuthor",
+        blank=True,
+        related_name="blog_pages",
+    )
+    tags = ParentalManyToManyField(
+        "blog.BlogTag",
+        blank=True,
+        related_name="blog_pages",
     )
     body = StreamField(
         BASE_BLOCKS + [("collapsible", CollapsibleBlock())],
@@ -300,7 +398,10 @@ class BlogPage(Page):
 
     content_panels = Page.content_panels + [
         FieldPanel("date"),
+        FieldPanel("is_featured"),
         FieldPanel("featured_image"),
+        FieldPanel("authors"),
+        FieldPanel("tags"),
         FieldPanel("body"),
     ]
 
@@ -371,10 +472,37 @@ class BlogPage(Page):
     def get_context(self, request):
         context = super().get_context(request)
         context.update(self.get_render_context(request=request))
+        site = Site.find_for_request(request)
+        if site:
+            context["blog_index_url"] = page_path_for_site(self.get_parent(), site)
         return context
+
+    @property
+    def primary_author(self):
+        return self.authors.first()
 
     class Meta:
         verbose_name = "Blog Post"
+
+
+class ContentPage(GhostContentFields, Page):
+    """Generic, safely rendered content such as the imported About page."""
+
+    body = StreamField(
+        BASE_BLOCKS,
+        blank=True,
+        use_json_field=True,
+    )
+
+    content_panels = Page.content_panels + [
+        FieldPanel("body"),
+    ]
+
+    parent_page_types = ["blog.BlogIndexPage"]
+    subpage_types = []
+
+    class Meta:
+        verbose_name = "Content Page"
 
 
 @receiver(page_published)

@@ -44,6 +44,8 @@ local_settings.py
 
 # Environment
 .env
+.env.*
+!.env.example
 .envrc
 
 # Docker

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+
+{% block content %}
+<article class="post">
+    <header class="post-header">
+        <h1 class="post-title">{{ page.title }}</h1>
+    </header>
+    <div class="content post-content">
+        {% for block in page.body %}
+            {% include "blog/blocks/render_block.html" with block=block %}
+        {% endfor %}
+    </div>
+</article>
+{% endblock %}

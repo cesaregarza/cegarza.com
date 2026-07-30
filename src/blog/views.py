@@ -48,11 +48,13 @@ def _html_to_text(html):
     return text.strip()
 
 
-def _enforce_view_restrictions(request, page):
+def _enforce_view_restrictions(request, page, *, fail_closed=False):
     restrictions = page.get_view_restrictions()
     for restriction in restrictions:
         if restriction.accept_request(request):
             continue
+        if fail_closed:
+            raise Http404
         if restriction.restriction_type == PageViewRestriction.PASSWORD:
             form = PasswordViewRestrictionForm(
                 instance=restriction,
@@ -195,7 +197,11 @@ def blog_page_markdown(request, page_path):
     if not isinstance(specific, BlogPage):
         raise Http404
 
-    restriction_response = _enforce_view_restrictions(request, specific)
+    restriction_response = _enforce_view_restrictions(
+        request,
+        specific,
+        fail_closed=True,
+    )
     if restriction_response is not None:
         return restriction_response
 

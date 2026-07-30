@@ -53,7 +53,7 @@ docker-build:  ## Rebuild Docker image
 
 # Initial setup
 setup: install  ## Initial project setup
-	@if [ ! -f .env ]; then cp .env.local .env; echo "Created .env from .env.local"; fi
+	@if [ ! -f .env ]; then cp .env.example .env; echo "Created .env from .env.example"; fi
 	cd $(SRC_DIR) && uv run python manage.py migrate
 	@echo ""
 	@echo "Setup complete! Run 'make dev' to start the server."
