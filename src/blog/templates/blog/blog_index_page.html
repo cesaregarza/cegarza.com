@@ -13,13 +13,13 @@
     {% if is_paginated %}
         {% if page_obj.has_previous %}
             {% if page_obj.previous_page_number == 1 %}
-                <link rel="prev" href="{{ page.full_url }}">
+                <link rel="prev" href="{{ current_page_url }}">
             {% else %}
-                <link rel="prev" href="{{ page.full_url }}?page={{ page_obj.previous_page_number }}">
+                <link rel="prev" href="{{ current_page_url }}?page={{ page_obj.previous_page_number }}">
             {% endif %}
         {% endif %}
         {% if page_obj.has_next %}
-            <link rel="next" href="{{ page.full_url }}?page={{ page_obj.next_page_number }}">
+            <link rel="next" href="{{ current_page_url }}?page={{ page_obj.next_page_number }}">
         {% endif %}
     {% endif %}
 {% endblock %}

@@ -1,35 +1,46 @@
 {% extends "base.html" %}
 {% load static wagtailcore_tags wagtailimages_tags wagtailmarkdown %}
 
-{% block description %}{{ page.abstract|default:page.search_description }}{% endblock %}
-{% block og_description %}{{ page.abstract|default:page.search_description }}{% endblock %}
-{% block twitter_description %}{{ page.abstract|default:page.search_description }}{% endblock %}
+{% block description %}{{ page.abstract|default:page.search_description|default:site_description }}{% endblock %}
+{% block og_description %}{{ page.abstract|default:page.search_description|default:site_description }}{% endblock %}
+{% block twitter_description %}{{ page.abstract|default:page.search_description|default:site_description }}{% endblock %}
 {% block og_type %}article{% endblock %}
 {% block extra_head %}
-    {% if page.date %}
+    {% if page.ghost_published_at %}
+        <meta property="article:published_time" content="{{ page.ghost_published_at|date:'c' }}">
+    {% elif page.date %}
         <meta property="article:published_time" content="{{ page.date|date:'c' }}">
     {% endif %}
-    {% if page.last_published_at %}
+    {% if page.ghost_updated_at %}
+        <meta property="article:modified_time" content="{{ page.ghost_updated_at|date:'c' }}">
+    {% elif page.last_published_at %}
         <meta property="article:modified_time" content="{{ page.last_published_at|date:'c' }}">
     {% endif %}
-    {% if page.full_url %}
+    <meta property="article:author" content="{{ page.primary_author.name|default:site_author }}">
+    {% for tag in page.tags.all %}
+        <meta property="article:tag" content="{{ tag.name }}">
+    {% endfor %}
+    {% if current_page_url %}
         <script type="application/ld+json">
             {
                 "@context": "https://schema.org",
                 "@type": "BlogPosting",
                 "headline": "{{ page.seo_title|default:page.title|escapejs }}",
                 "description": "{{ page.abstract|default:page.search_description|default:''|striptags|escapejs }}",
-                "url": "{{ page.full_url|escapejs }}",
+                "url": "{{ current_page_url|escapejs }}",
                 "author": {
-                    "@type": "Organization",
-                    "name": "SplatTop"
+                    "@type": "Person",
+                    "name": "{{ page.primary_author.name|default:site_author|escapejs }}"
                 },
                 "publisher": {
                     "@type": "Organization",
-                    "name": "SplatTop Blog"
-                }{% if page.date %},
-                "datePublished": "{{ page.date|date:'c' }}"{% endif %}{% if page.last_published_at %},
-                "dateModified": "{{ page.last_published_at|date:'c' }}"{% endif %}{% if page.social_image %},
+                    "name": "{{ site_name|escapejs }}"
+                }{% if page.ghost_published_at %},
+                "datePublished": "{{ page.ghost_published_at|date:'c' }}"{% elif page.date %},
+                "datePublished": "{{ page.date|date:'c' }}"{% endif %}{% if page.ghost_updated_at %},
+                "dateModified": "{{ page.ghost_updated_at|date:'c' }}"{% elif page.last_published_at %},
+                "dateModified": "{{ page.last_published_at|date:'c' }}"{% endif %}{% if page.tags.exists %},
+                "keywords": [{% for tag in page.tags.all %}"{{ tag.name|escapejs }}"{% if not forloop.last %}, {% endif %}{% endfor %}]{% endif %}{% if page.social_image %},
                 {% image page.social_image fill-1200x630 as schema_img %}
                 "image": "{{ request.scheme }}://{{ request.get_host }}{{ schema_img.url }}"{% elif page.featured_image %},
                 {% image page.featured_image fill-1200x630 as schema_img %}
@@ -47,6 +58,12 @@
             {% if page.date %}
                 <p class="post-meta">
                     <time datetime="{{ page.date|date:'Y-m-d' }}">{{ page.date }}</time>
+                    {% if page.primary_author %} · {{ page.primary_author.name }}{% endif %}
+                </p>
+            {% endif %}
+            {% if page.tags.exists %}
+                <p class="post-meta">
+                    {% for tag in page.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
                 </p>
             {% endif %}
             {% if page.abstract %}
@@ -118,7 +135,7 @@
 </div>
 
 <nav class="post-nav">
-    <a href="{{ page.get_parent.url }}">&larr; Back to posts</a>
+    <a href="{{ blog_index_url|default:'/' }}">&larr; Back to posts</a>
 </nav>
 {% endblock %}
 

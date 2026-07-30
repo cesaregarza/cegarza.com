@@ -712,6 +712,10 @@ h1, h2, h3, h4 {
     z-index: 1;
 }
 
+.post-content svg.ge-export-svg-dark:not(mjx-container > svg) {
+    filter: invert(100%) hue-rotate(180deg);
+}
+
 .post-content a:not(.para-anchor):not(.button-primary):not(.link-card),
 .markdown-content a:not(.para-anchor):not(.button-primary):not(.link-card),
 .rich-text a:not(.para-anchor):not(.button-primary):not(.link-card) {
