@@ -3,12 +3,12 @@
 <details class="collapsible-block{% if category %} collapsible-block--{{ category }}{% endif %}"{% if value.open_by_default %} open{% endif %}>
     <summary class="collapsible-block__summary">
         <span class="collapsible-block__heading">
-            <span class="collapsible-block__title">{{ value.title }}</span>
             {% if category %}
             <span class="collapsible-block__badge collapsible-block__badge--{{ category }}">
                 {% if category == "subquest" %}Side Quest{% else %}{{ category|capfirst }}{% endif %}
             </span>
             {% endif %}
+            <span class="collapsible-block__title">{{ value.title }}</span>
             <span class="collapsible-block__readtime" data-collapsible-readtime>-- min</span>
         </span>
         <span class="collapsible-block__icon" aria-hidden="true"></span>

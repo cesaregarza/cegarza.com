@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1020">
+    <meta name="color-scheme" content="dark light">
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="author" content="{{ site_author }}">
+    <link rel="icon" href="{% static 'icons/favicon.svg' %}" type="image/svg+xml">
+    <title>{% block error_title %}{% endblock %} | {{ site_name }}</title>
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+</head>
+<body class="error-page">
+    <a class="skip-link" href="#error-content">Skip to content</a>
+    <header class="error-header">
+        <a href="/" aria-label="{{ site_name }} home">
+            <strong>splat.top</strong>
+            <span>/ blog</span>
+        </a>
+    </header>
+    <main class="error-shell" id="error-content">
+        <div class="error-band">
+            <span>{% block error_code %}{% endblock %}</span>
+            <span aria-hidden="true">·</span>
+            <span>{% block error_label %}{% endblock %}</span>
+        </div>
+        <section class="error-state" aria-labelledby="error-heading">
+            <h1 id="error-heading">{% block error_heading %}{% endblock %}</h1>
+            <p>{% block error_message %}{% endblock %}</p>
+            <a href="/">back to posts →</a>
+        </section>
+    </main>
+</body>
+</html>

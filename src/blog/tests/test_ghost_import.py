@@ -898,7 +898,11 @@ class GhostImportTest(TestCase):
             published["Content-Security-Policy-Report-Only"],
         )
         self.assertContains(index, "Synthetic post 0")
-        self.assertNotContains(index, ">About<")
+        writing_index_html = index.content.decode("utf-8").split(
+            '<section class="writing-index"',
+            maxsplit=1,
+        )[1].split("</section>", maxsplit=1)[0]
+        self.assertNotIn('href="/about/"', writing_index_html)
         for response in (index, feed, rss, sitemap):
             self.assertNotContains(response, "Synthetic post 4")
             self.assertNotContains(response, "Synthetic post 5")

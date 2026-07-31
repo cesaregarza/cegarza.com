@@ -299,6 +299,7 @@ SITE_DESCRIPTION = get_env(
     default="SplatTop blog posts and analysis.",
 )
 SITE_AUTHOR = get_env("SITE_AUTHOR", "SITE_AUTHOR_NAME", default="SplatTop")
+BLOG_TAGS_ENABLED = get_env_bool("BLOG_TAGS_ENABLED", default=False)
 WAGTAIL_SITE_NAME = SITE_NAME
 WAGTAILADMIN_BASE_URL = get_env(
     "WAGTAILADMIN_BASE_URL",

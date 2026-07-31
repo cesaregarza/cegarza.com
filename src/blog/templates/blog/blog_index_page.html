@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load wagtailcore_tags wagtailimages_tags %}
+{% load static wagtailcore_tags wagtailimages_tags %}
 
 {% block canonical_link %}
     {% if page_obj and page_obj.number > 1 %}
@@ -24,54 +24,140 @@
     {% endif %}
 {% endblock %}
 
-{% block content %}
-<section class="page-hero">
-    <h1 class="page-title">{{ page.title }}</h1>
-    {% if page.intro %}
-        <p class="page-intro">{{ page.intro }}</p>
-    {% endif %}
-</section>
+{% block body_class %}page--index{% endblock %}
 
-<section class="posts-grid">
-    {% for post in posts %}
-        <article class="post-card{% if not post.featured_image %} post-card--no-media{% endif %}">
-            {% if post.featured_image %}
-                <a href="{% pageurl post %}" class="post-card__media">
-                    {% image post.featured_image fill-800x360 as img %}
-                    <img src="{{ img.url }}" alt="{{ post.title }}">
+{% block content %}
+<header class="index-hero" aria-labelledby="index-title">
+    <p class="eyebrow">analysis · open notebook</p>
+    <h1 id="index-title">{{ page.title }}</h1>
+    <p>{{ page.intro|default:site_description }}</p>
+</header>
+
+<dl class="index-stats" aria-label="Publication statistics">
+    <div class="index-stats__cell">
+        <dd>{{ paginator.count|default:0 }}</dd>
+        <dt>posts</dt>
+    </div>
+    <div class="index-stats__cell">
+        <dd>{{ series_count|default:0 }}</dd>
+        <dt>series</dt>
+    </div>
+    <div class="index-stats__cell">
+        <dd>{{ applet_count|default:0 }}</dd>
+        <dt>applets</dt>
+    </div>
+    <div class="index-stats__sort">newest first</div>
+</dl>
+
+<section class="writing-index" id="latest-writing" aria-label="Posts">
+{% if posts %}
+    {% with lead_post=posts.0 %}
+        <article class="lead-post" id="latest-post">
+            {% if lead_post.featured_image %}
+                <a class="lead-post__media" href="{% pageurl lead_post %}" tabindex="-1" aria-hidden="true">
+                    {% image lead_post.featured_image fill-760x500 as lead_img %}
+                    <img
+                        src="{{ lead_img.url }}"
+                        alt=""
+                        width="{{ lead_img.width }}"
+                        height="{{ lead_img.height }}"
+                        fetchpriority="high"
+                    >
                 </a>
+            {% else %}
+                <div class="lead-post__media lead-post__media--empty" aria-hidden="true">
+                    <span>lead graphic</span>
+                </div>
             {% endif %}
-            <div class="post-card__content">
-                {% if post.date %}
-                    <span class="post-card__meta">{{ post.date }}</span>
+            <div class="lead-post__body">
+                <p class="post-meta">
+                    <span class="badge badge--latest">{% if page_obj.number == 1 %}latest{% else %}archive{% endif %}</span>
+                    {% if lead_post.date %}
+                        <time datetime="{{ lead_post.date|date:'Y-m-d' }}">{{ lead_post.date|date:"Y-m-d" }}</time>
+                        <span aria-hidden="true">·</span>
+                    {% endif %}
+                    <span>{{ lead_post.body_rendered_readtime_main|default:"— min" }}</span>
+                </p>
+                <h2><a href="{% pageurl lead_post %}">{{ lead_post.title }}</a></h2>
+                {% if lead_post.abstract %}
+                    <p class="lead-post__excerpt">{{ lead_post.abstract }}</p>
+                {% elif lead_post.search_description %}
+                    <p class="lead-post__excerpt">{{ lead_post.search_description }}</p>
                 {% endif %}
-                <h2 class="post-card__title"><a href="{% pageurl post %}">{{ post.title }}</a></h2>
-                {% if post.abstract %}
-                    <p class="post-card__excerpt">{{ post.abstract }}</p>
-                {% elif post.search_description %}
-                    <p class="post-card__excerpt">{{ post.search_description }}</p>
-                {% endif %}
+                <p class="lead-post__actions">
+                    <a href="{% pageurl lead_post %}">read →</a>
+                </p>
             </div>
         </article>
-    {% empty %}
-        <p class="page-intro">No posts yet.</p>
-    {% endfor %}
+    {% endwith %}
+
+    {% block series_groups %}{% endblock %}
+
+    {% if posts|length > 1 %}
+        <div class="index-divider">standalone</div>
+        <section class="post-grid" aria-label="Standalone posts">
+            {% for post in posts|slice:"1:" %}
+                <article class="post-cell">
+                    <p class="post-meta">
+                        {% if post.date %}
+                            <time datetime="{{ post.date|date:'Y-m-d' }}">{{ post.date|date:"Y-m-d" }}</time>
+                            <span aria-hidden="true">·</span>
+                        {% endif %}
+                        <span>{{ post.body_rendered_readtime_main|default:"— min" }}</span>
+                    </p>
+                    <h2><a href="{% pageurl post %}">{{ post.title }}</a></h2>
+                    {% if post.abstract %}
+                        <p>{{ post.abstract }}</p>
+                    {% elif post.search_description %}
+                        <p>{{ post.search_description }}</p>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
+{% else %}
+    <section class="empty-state">
+        <p class="eyebrow">no entries</p>
+        <h2>The notebook is open.</h2>
+        <p>The first post will appear here.</p>
+    </section>
+{% endif %}
 </section>
+
+{% if applets %}
+    <section class="applet-index" id="applets" aria-labelledby="applets-title">
+        <header class="index-divider index-divider--heading">
+            <h2 id="applets-title">applets</h2>
+            <span>{{ applet_count }} interactive notes</span>
+        </header>
+        <div class="applet-index__grid">
+            {% for applet in applets %}
+                <a class="applet-index__item" href="{% static applet.path %}">
+                    <span class="applet-index__number">0{{ forloop.counter }}</span>
+                    <span class="applet-index__title">{{ applet.title }}</span>
+                    <span class="applet-index__action">open →</span>
+                </a>
+            {% endfor %}
+        </div>
+    </section>
+{% endif %}
 
 {% if is_paginated %}
     <nav class="pagination" aria-label="Posts">
         {% if page_obj.has_previous %}
-            <a class="pagination__link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            <a class="pagination__direction" href="?page={{ page_obj.previous_page_number }}">← newer</a>
         {% else %}
-            <span class="pagination__link pagination__link--disabled">Previous</span>
+            <span class="pagination__direction pagination__direction--disabled">← newer</span>
         {% endif %}
 
-        <span class="pagination__status">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        <span class="pagination__status">
+            {{ page_obj.number|stringformat:"02d" }} / {{ page_obj.paginator.num_pages|stringformat:"02d" }}
+        </span>
 
         {% if page_obj.has_next %}
-            <a class="pagination__link" href="?page={{ page_obj.next_page_number }}">Next</a>
+            <a class="pagination__direction pagination__direction--older" href="?page={{ page_obj.next_page_number }}">older →</a>
         {% else %}
-            <span class="pagination__link pagination__link--disabled">Next</span>
+            <span class="pagination__direction pagination__direction--disabled">older →</span>
         {% endif %}
     </nav>
 {% endif %}

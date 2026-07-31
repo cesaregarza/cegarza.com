@@ -1,22 +1,28 @@
 {% extends "base.html" %}
 {% load wagtailcore_tags %}
 
-{% block content %}
-<section class="page-hero">
-    <h1 class="page-title">{{ page.title }}</h1>
-    {% if page.search_description %}
-        <p class="page-intro">{{ page.search_description }}</p>
-    {% endif %}
-</section>
+{% block body_class %}page--directory{% endblock %}
 
-<section class="link-grid">
+{% block content %}
+<header class="directory-hero">
+    <p class="eyebrow">directory · splat.top</p>
+    <h1>{{ page.title }}</h1>
+    {% if page.search_description %}
+        <p>{{ page.search_description }}</p>
+    {% endif %}
+</header>
+
+<nav class="directory-grid" aria-label="Site sections">
     {% for child in page.get_children.live %}
-        <a class="link-card" href="{% pageurl child %}">
-            <div class="link-card__title">{{ child.title }}</div>
-            <div class="link-card__meta">Explore page</div>
+        <a class="directory-grid__item" href="{% pageurl child %}">
+            <span class="directory-grid__index">0{{ forloop.counter }}</span>
+            <strong>{{ child.title }}</strong>
+            <span>open →</span>
         </a>
     {% empty %}
-        <p class="page-intro">No pages yet.</p>
+        <div class="empty-state">
+            <p>No pages yet.</p>
+        </div>
     {% endfor %}
-</section>
+</nav>
 {% endblock %}

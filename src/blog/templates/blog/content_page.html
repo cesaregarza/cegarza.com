@@ -1,15 +1,28 @@
 {% extends "base.html" %}
 {% load wagtailcore_tags %}
 
+{% block body_class %}page--content{% endblock %}
+
 {% block content %}
-<article class="post">
-    <header class="post-header">
-        <h1 class="post-title">{{ page.title }}</h1>
-    </header>
-    <div class="content post-content">
-        {% for block in page.body %}
-            {% include "blog/blocks/render_block.html" with block=block %}
-        {% endfor %}
+<header class="content-page__header">
+    <p class="eyebrow">about · open notebook</p>
+    <h1>{{ page.title }}</h1>
+    {% if page.search_description %}
+        <p>{{ page.search_description }}</p>
+    {% endif %}
+</header>
+
+<article class="content-page">
+    <aside class="content-page__rail" aria-label="Section">
+        <span>about</span>
+        <a href="{{ site_home_url|default:'/' }}">posts →</a>
+    </aside>
+    <div class="content-page__body">
+        <div class="content post-content">
+            {% for block in page.body %}
+                {% include "blog/blocks/render_block.html" with block=block %}
+            {% endfor %}
+        </div>
     </div>
 </article>
 {% endblock %}

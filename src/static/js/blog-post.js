@@ -33,10 +33,54 @@
     const crumbEl = document.getElementById("postTocCrumb");
     const toc = document.querySelector(".post-toc");
     const progressEl = document.getElementById("postTocProgress");
+    const readingStatus = document.getElementById("readingStatus");
     const drawerToggle = document.getElementById("postTocDrawerToggle");
     const backdrop = document.getElementById("postTocBackdrop");
 
     if (!content) return;
+
+    const configuredReadMinutes = Number.parseInt(
+      readingStatus?.dataset.readMinutes || "",
+      10
+    );
+    const readMinutes = Number.isFinite(configuredReadMinutes)
+      ? Math.max(1, configuredReadMinutes)
+      : 1;
+
+    const updateReadingProgress = () => {
+      const viewportHeight =
+        window.innerHeight || document.documentElement.clientHeight || 0;
+      const contentRect = content.getBoundingClientRect();
+      const contentTop = window.scrollY + contentRect.top;
+      const maxScroll = Math.max(1, content.offsetHeight - viewportHeight);
+      const scrollY = window.scrollY - contentTop;
+      const progress = Math.min(1, Math.max(0, scrollY / maxScroll));
+      const percentage = Math.round(progress * 100);
+      if (progressEl) {
+        progressEl.style.width = `${(progress * 100).toFixed(2)}%`;
+      }
+      if (readingStatus) {
+        const remaining = Math.max(0, Math.ceil(readMinutes * (1 - progress)));
+        readingStatus.textContent = `${percentage}% · ${remaining} min left`;
+      }
+    };
+
+    let readingProgressQueued = false;
+    const queueReadingProgress = () => {
+      if (readingProgressQueued) return;
+      readingProgressQueued = true;
+      window.requestAnimationFrame(() => {
+        readingProgressQueued = false;
+        updateReadingProgress();
+      });
+    };
+    window.addEventListener("scroll", queueReadingProgress, { passive: true });
+    window.addEventListener("resize", queueReadingProgress);
+    window.addEventListener("load", queueReadingProgress);
+    if ("ResizeObserver" in window) {
+      new ResizeObserver(queueReadingProgress).observe(content);
+    }
+    queueReadingProgress();
 
     const setupAppletFrames = () => {
       const frames = Array.from(content.querySelectorAll("iframe.applet-frame"));
@@ -128,6 +172,20 @@
           onLoad();
         }
       });
+
+      content.querySelectorAll("[data-applet-shell]").forEach((shell) => {
+        const frame = shell.querySelector("iframe.applet-frame");
+        const reset = shell.querySelector("[data-applet-reset]");
+        const fullscreen = shell.querySelector("[data-applet-fullscreen]");
+        reset?.addEventListener("click", () => {
+          if (frame) frame.src = frame.src;
+        });
+        fullscreen?.addEventListener("click", () => {
+          if (shell.requestFullscreen) {
+            shell.requestFullscreen().catch(() => {});
+          }
+        });
+      });
     };
 
     setupAppletFrames();
@@ -149,10 +207,10 @@
       return `${base}${suffix}`;
     };
 
-    const showCopyToast = (anchor) => {
+    const showCopyToast = (anchor, message = "Link copied") => {
       const toast = document.createElement("div");
       toast.className = "copy-toast";
-      toast.textContent = "Link copied";
+      toast.textContent = message;
       document.body.appendChild(toast);
       const rect = anchor.getBoundingClientRect();
       const top = Math.max(12, rect.top - 28);
@@ -167,6 +225,39 @@
         setTimeout(() => toast.remove(), 200);
       }, 1200);
     };
+
+    content.querySelectorAll("[data-code-copy]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const code = button.closest(".code-block")?.querySelector("code");
+        const text = code?.textContent || "";
+        navigator.clipboard?.writeText(text).catch(() => {});
+        showCopyToast(button, "Code copied");
+      });
+    });
+
+    document.querySelectorAll("[data-share-action]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const url = button.dataset.shareUrl || window.location.href;
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: document.title, url });
+            return;
+          } catch (error) {
+            if (error?.name === "AbortError") return;
+          }
+        }
+        navigator.clipboard?.writeText(url).catch(() => {});
+        showCopyToast(button, "Link copied");
+      });
+    });
+
+    document.querySelectorAll("[data-cite-action]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const citation = button.dataset.citation || document.title;
+        navigator.clipboard?.writeText(citation).catch(() => {});
+        showCopyToast(button, "Citation copied");
+      });
+    });
 
     const addAnchor = (el, prefix, explicitId = "", textOverride = "") => {
       if (!el || el.querySelector(".para-anchor")) return;
@@ -198,8 +289,7 @@
     const headings = Array.from(content.querySelectorAll("h1, h2, h3"));
 
     if (headings.length === 0) {
-      const sidebar = toc ? toc.closest(".post-sidebar") : null;
-      if (sidebar) sidebar.style.display = "none";
+      if (toc) toc.style.display = "none";
       if (drawerToggle) drawerToggle.style.display = "none";
     } else if (tocList && crumbEl && toc) {
       const headingMeta = [];
@@ -374,17 +464,10 @@
 
       let ticking = false;
       let recomputeQueued = false;
-      let contentTop = 0;
-      let contentHeight = 0;
-      let viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
       let headingPositions = [];
 
       const updateProgress = () => {
-        if (!progressEl) return;
-        const maxScroll = Math.max(1, contentHeight - viewportHeight);
-        const scrollY = window.scrollY - contentTop;
-        const progress = Math.min(1, Math.max(0, scrollY / maxScroll));
-        progressEl.style.width = `${(progress * 100).toFixed(2)}%`;
+        updateReadingProgress();
       };
 
       const isHeadingVisible = (heading) => {
@@ -396,9 +479,6 @@
       };
 
       const recomputeLayoutMetrics = () => {
-        viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-        contentTop = content.offsetTop;
-        contentHeight = content.offsetHeight;
         headingPositions = [];
         headings.forEach((heading) => {
           if (!isHeadingVisible(heading)) return;

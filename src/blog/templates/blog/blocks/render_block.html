@@ -28,7 +28,13 @@
         </figure>
     {% endwith %}
 {% elif block.block_type == 'code' %}
-    <pre><code class="language-{{ block.value.language }}">{{ block.value.code }}</code></pre>
+    <figure class="code-block">
+        <figcaption>
+            <span>{{ block.value.language|default:"code" }}</span>
+            <button type="button" data-code-copy>copy</button>
+        </figcaption>
+        <pre><code class="language-{{ block.value.language }}">{{ block.value.code }}</code></pre>
+    </figure>
 {% elif block.block_type == 'raw_html' %}
     {{ block.value|sanitize_html }}
 {% elif block.block_type == 'quote' %}

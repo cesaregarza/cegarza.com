@@ -2,7 +2,8 @@ from django.conf import settings
 from django.db import DatabaseError
 from wagtail.models import Site
 
-from blog.models import BlogIndexPage
+from blog.models import BlogIndexPage, ContentPage
+from blog.site_urls import page_path_for_site
 
 
 def site_identity_values(site):
@@ -22,14 +23,54 @@ def site_identity_values(site):
     }
 
 
+def site_navigation_values(site):
+    navigation = {
+        "site_home_url": "/",
+        "site_about_url": "",
+    }
+    if not site or not getattr(site, "root_page_id", None):
+        return navigation
+
+    root_page = site.root_page.specific
+    if isinstance(root_page, BlogIndexPage):
+        blog_index = root_page
+    else:
+        blog_index = (
+            BlogIndexPage.objects.descendant_of(site.root_page)
+            .live()
+            .public()
+            .order_by("path")
+            .first()
+        )
+
+    if not blog_index:
+        return navigation
+
+    navigation["site_home_url"] = page_path_for_site(blog_index, site) or "/"
+    about_page = (
+        ContentPage.objects.child_of(blog_index)
+        .live()
+        .public()
+        .filter(slug="about")
+        .first()
+    )
+    if about_page:
+        navigation["site_about_url"] = page_path_for_site(about_page, site) or ""
+    return navigation
+
+
 def site_identity(request):
     """Expose branding for the Wagtail Site that owns this request."""
 
     try:
-        identity = site_identity_values(Site.find_for_request(request))
+        site = Site.find_for_request(request)
+        identity = site_identity_values(site)
+        navigation = site_navigation_values(site)
     except DatabaseError:
         identity = site_identity_values(None)
+        navigation = site_navigation_values(None)
     return {
         **identity,
+        **navigation,
         "wagtail_admin_base_url": settings.WAGTAILADMIN_BASE_URL,
     }
