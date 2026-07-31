@@ -50,44 +50,61 @@
     {% endif %}
 {% endblock %}
 
+{% block body_class %}page--article{% endblock %}
+
 {% block content %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="{{ blog_index_url|default:site_home_url|default:'/' }}">Writing</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">{{ page.title }}</span>
+</nav>
+
 <div class="post-layout">
     <article class="post">
         <header class="post-header">
+            <p class="eyebrow">Field note</p>
             <h1 class="post-title">{{ page.title }}</h1>
-            {% if page.date %}
-                <p class="post-meta">
-                    <time datetime="{{ page.date|date:'Y-m-d' }}">{{ page.date }}</time>
-                    {% if page.primary_author %} · {{ page.primary_author.name }}{% endif %}
-                </p>
-            {% endif %}
-            {% if page.tags.exists %}
-                <p class="post-meta">
-                    {% for tag in page.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
-                </p>
-            {% endif %}
             {% if page.abstract %}
                 <p class="post-abstract">{{ page.abstract }}</p>
             {% endif %}
-            <div class="post-readtime" id="postReadTime" aria-live="polite">
-                <span class="post-readtime__main">Main path: {{ readtime_main|default:"-- min" }}</span>
-                <span class="post-readtime__divider">•</span>
-                <span class="post-readtime__deep">With deep dives: {{ readtime_deep|default:"-- min" }}</span>
+            <div class="post-byline">
+                <div class="post-byline__item">
+                    <span class="post-byline__label">Written by</span>
+                    <span>{{ page.primary_author.name|default:site_author }}</span>
+                </div>
+                {% if page.date %}
+                    <div class="post-byline__item">
+                        <span class="post-byline__label">Published</span>
+                        <time datetime="{{ page.date|date:'Y-m-d' }}">{{ page.date|date:"M j, Y" }}</time>
+                    </div>
+                {% endif %}
+                <div class="post-readtime post-byline__item" id="postReadTime" aria-live="polite">
+                    <span class="post-byline__label">Reading time</span>
+                    <span class="post-readtime__main">{{ readtime_main|default:"-- min" }} main path</span>
+                    <span class="post-readtime__divider" aria-hidden="true">/</span>
+                    <span class="post-readtime__deep">{{ readtime_deep|default:"-- min" }} with deep dives</span>
+                </div>
             </div>
+            {% if page.tags.exists %}
+                <ul class="story-tags post-tags" aria-label="Topics">
+                    {% for tag in page.tags.all %}<li>{{ tag.name }}</li>{% endfor %}
+                </ul>
+            {% endif %}
         </header>
 
-            {% if page.featured_image %}
-                {% image page.featured_image width-800 as img %}
-            <img
-                src="{{ img.url }}"
-                alt="{{ page.title }}"
-                class="featured-image"
-                width="{{ img.width }}"
-                height="{{ img.height }}"
-                decoding="async"
-                fetchpriority="high"
-            >
-            {% endif %}
+        {% if page.featured_image %}
+            {% image page.featured_image width-1200 as img %}
+            <figure class="featured-image">
+                <img
+                    src="{{ img.url }}"
+                    alt="{{ img.alt|default:page.title }}"
+                    width="{{ img.width }}"
+                    height="{{ img.height }}"
+                    decoding="async"
+                    fetchpriority="high"
+                >
+            </figure>
+        {% endif %}
 
         <div class="content post-content">
             {% if body_html %}
@@ -98,16 +115,27 @@
                 {% endfor %}
             {% endif %}
         </div>
+
+        <footer class="post-endnote">
+            <span class="post-endnote__mark" aria-hidden="true">∎</span>
+            <div>
+                <p class="post-endnote__eyebrow">End note</p>
+                <p>Thanks for reading. More field notes live in the notebook.</p>
+            </div>
+            <a class="text-link" href="{{ blog_index_url|default:site_home_url|default:'/' }}">
+                Browse all writing <span aria-hidden="true">→</span>
+            </a>
+        </footer>
     </article>
 
     {% if toc_items %}
-        <aside class="post-sidebar" aria-label="Post navigation">
+        <aside class="post-sidebar" id="postOutline" aria-label="Post navigation">
             <div class="post-toc">
                 <div class="post-toc__progress">
                     <span class="post-toc__progress-bar" id="postTocProgress"></span>
                 </div>
                 <div class="post-toc__header">
-                    <div class="post-toc__eyebrow">You are here</div>
+                    <div class="post-toc__eyebrow">Reading position</div>
                     <div class="post-toc__crumb" id="postTocCrumb">{{ toc_crumb|default:"On this page" }}</div>
                 </div>
                 <div class="post-toc__title">On this page</div>
@@ -135,13 +163,19 @@
 </div>
 
 <nav class="post-nav">
-    <a href="{{ blog_index_url|default:'/' }}">&larr; Back to posts</a>
+    <a href="{{ blog_index_url|default:site_home_url|default:'/' }}">&larr; Back to posts</a>
 </nav>
 {% endblock %}
 
 {% block header_actions %}
 {% if toc_items %}
-    <button class="post-toc-drawer-toggle" id="postTocDrawerToggle" type="button" aria-expanded="false">
+    <button
+        class="post-toc-drawer-toggle"
+        id="postTocDrawerToggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="postOutline"
+    >
         <span class="post-toc-drawer-toggle__icon" aria-hidden="true"><span></span></span>
         <span class="post-toc-drawer-toggle__label">Outline</span>
     </button>

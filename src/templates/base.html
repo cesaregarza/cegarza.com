@@ -5,6 +5,9 @@
     {% current_page_full_url page as current_page_url %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#090911">
+    <meta name="color-scheme" content="dark">
+    <link rel="icon" href="{% static 'icons/favicon.svg' %}" type="image/svg+xml">
     <title>{% block title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %}{% endblock %} | {{ site_name }}</title>
     <meta name="description" content="{% block description %}{{ page.search_description|default:site_description }}{% endblock %}">
     <meta name="author" content="{{ site_author }}">
@@ -57,27 +60,68 @@
     {% block extra_head %}{% endblock %}
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
+    <a class="skip-link" href="#main-content">Skip to content</a>
     <div class="page-shell">
         <header class="site-header">
             <div class="container site-header__inner">
-                <a href="/" class="site-title">
-                    <span class="site-title__mark" aria-hidden="true"></span>
-                    <span class="site-title__text">{{ site_name }}</span>
+                <a href="{{ site_home_url|default:'/' }}" class="site-title" aria-label="{{ site_name }} home">
+                    <span class="site-title__mark" aria-hidden="true">
+                        <span></span>
+                    </span>
+                    <span class="site-title__lockup">
+                        <span class="site-title__eyebrow">Field notes</span>
+                        <span class="site-title__text">{{ site_name }}</span>
+                    </span>
                 </a>
-                <div class="site-header__actions">
-                    {% block header_actions %}{% endblock %}
+                <div class="site-header__right">
+                    <nav class="site-nav" aria-label="Primary navigation">
+                        <a
+                            class="site-nav__link"
+                            href="{{ site_home_url|default:'/' }}"
+                            {% if request.path == site_home_url %}aria-current="page"{% endif %}
+                        >Writing</a>
+                        {% if site_about_url %}
+                            <a
+                                class="site-nav__link"
+                                href="{{ site_about_url }}"
+                                {% if request.path == site_about_url %}aria-current="page"{% endif %}
+                            >About</a>
+                        {% endif %}
+                        <a class="site-nav__link site-nav__link--quiet" href="/feed/">RSS</a>
+                    </nav>
+                    <div class="site-header__actions">
+                        {% block header_actions %}{% endblock %}
+                    </div>
                 </div>
             </div>
         </header>
 
-        <main class="container site-main">
+        <main class="container site-main" id="main-content">
             {% block content %}{% endblock %}
         </main>
 
         <footer class="site-footer">
-            <div class="container">
-                {% block footer %}<p>{{ site_name }} · {{ site_author }}</p>{% endblock %}
+            <div class="container site-footer__inner">
+                {% block footer %}
+                    <div class="site-footer__brand">
+                        <span class="site-footer__mark" aria-hidden="true"></span>
+                        <div>
+                            <p class="site-footer__title">{{ site_name }}</p>
+                            <p class="site-footer__description">{{ site_description }}</p>
+                        </div>
+                    </div>
+                    <nav class="site-footer__nav" aria-label="Footer navigation">
+                        <a href="{{ site_home_url|default:'/' }}">Writing</a>
+                        {% if site_about_url %}<a href="{{ site_about_url }}">About</a>{% endif %}
+                        <a href="/feed/">RSS</a>
+                        <a href="/sitemap.xml">Sitemap</a>
+                    </nav>
+                    <p class="site-footer__meta">
+                        &copy; {% now "Y" %} {{ site_author }}<br>
+                        Built for careful reading.
+                    </p>
+                {% endblock %}
             </div>
         </footer>
     </div>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img">
+  <title>Bringing Down The Gauss</title>
+  <rect width="64" height="64" rx="16" fill="#090911"/>
+  <circle cx="32" cy="32" r="20" fill="none" stroke="#e0a6ea" stroke-width="2"/>
+  <path d="M11 43 53 19" fill="none" stroke="#e0a6ea" stroke-width="2"/>
+  <circle cx="32" cy="32" r="4" fill="#e0a6ea"/>
+  <circle cx="48" cy="20" r="4" fill="#ffc58c"/>
+</svg>

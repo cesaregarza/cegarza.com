@@ -1,15 +1,32 @@
 {% extends "base.html" %}
 {% load wagtailcore_tags %}
 
+{% block body_class %}page--content{% endblock %}
+
 {% block content %}
-<article class="post">
-    <header class="post-header">
-        <h1 class="post-title">{{ page.title }}</h1>
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="{{ site_home_url|default:'/' }}">Writing</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">{{ page.title }}</span>
+</nav>
+
+<article class="content-page">
+    <header class="content-page__header">
+        <p class="eyebrow">About the notebook</p>
+        <h1 class="page-title">{{ page.title }}</h1>
+        <p class="content-page__dek">The person, purpose, and practice behind {{ site_name }}.</p>
     </header>
-    <div class="content post-content">
-        {% for block in page.body %}
-            {% include "blog/blocks/render_block.html" with block=block %}
-        {% endfor %}
+    <div class="content-page__body">
+        <aside class="content-page__rail" aria-hidden="true">
+            <span>BTG</span>
+            <i></i>
+            <small>field notes</small>
+        </aside>
+        <div class="content post-content">
+            {% for block in page.body %}
+                {% include "blog/blocks/render_block.html" with block=block %}
+            {% endfor %}
+        </div>
     </div>
 </article>
 {% endblock %}

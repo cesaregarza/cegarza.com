@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 {% load wagtailcore_tags %}
 
+{% block body_class %}page--directory{% endblock %}
+
 {% block content %}
-<section class="page-hero">
+<section class="page-hero page-hero--directory">
+    <p class="eyebrow">Explore</p>
     <h1 class="page-title">{{ page.title }}</h1>
     {% if page.search_description %}
         <p class="page-intro">{{ page.search_description }}</p>
@@ -12,11 +15,15 @@
 <section class="link-grid">
     {% for child in page.get_children.live %}
         <a class="link-card" href="{% pageurl child %}">
-            <div class="link-card__title">{{ child.title }}</div>
-            <div class="link-card__meta">Explore page</div>
+            <span class="link-card__index">0{{ forloop.counter }}</span>
+            <span class="link-card__title">{{ child.title }}</span>
+            <span class="link-card__meta">Explore page <span aria-hidden="true">→</span></span>
         </a>
     {% empty %}
-        <p class="page-intro">No pages yet.</p>
+        <div class="empty-state">
+            <span class="empty-state__mark" aria-hidden="true">∅</span>
+            <p>No pages yet.</p>
+        </div>
     {% endfor %}
 </section>
 {% endblock %}

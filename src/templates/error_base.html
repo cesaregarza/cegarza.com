@@ -1,0 +1,37 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#090911">
+    <meta name="color-scheme" content="dark">
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="author" content="{{ site_author }}">
+    <link rel="icon" href="{% static 'icons/favicon.svg' %}" type="image/svg+xml">
+    <title>{% block error_title %}{% endblock %} | {{ site_name }}</title>
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+</head>
+<body class="error-page">
+    <a class="skip-link" href="#error-content">Skip to content</a>
+    <main class="error-shell" id="error-content">
+        <a class="error-brand" href="/" aria-label="{{ site_name }} home">
+            <span class="site-title__mark" aria-hidden="true"><span></span></span>
+            <span>{{ site_name }}</span>
+        </a>
+        <section class="error-panel" aria-labelledby="error-heading">
+            <div class="error-panel__signal" aria-hidden="true">
+                <span class="error-code">{% block error_code %}{% endblock %}</span>
+                <i></i>
+            </div>
+            <div class="error-panel__copy">
+                <p class="eyebrow">Signal interrupted</p>
+                <h1 id="error-heading">{% block error_heading %}{% endblock %}</h1>
+                <p>{% block error_message %}{% endblock %}</p>
+                <a class="button-primary" href="/">Return to the notebook</a>
+            </div>
+        </section>
+        <p class="error-shell__footer">{{ site_name }} / {{ site_author }}</p>
+    </main>
+</body>
+</html>
