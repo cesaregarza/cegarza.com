@@ -16,12 +16,12 @@ from django.views.generic import RedirectView
 from django.views.static import serve as serve_static_file
 from wagtail import urls as wagtail_urls
 from wagtail.admin import urls as wagtailadmin_urls
-from wagtail.contrib.sitemaps.views import sitemap
 from wagtail.documents import urls as wagtaildocs_urls
 
 from blog import views as blog_views
-from blog.feeds import BlogAtomFeed, BlogFeed
+from blog.feeds import BlogAtomFeed, BlogFeed, BlogSeriesAtomFeed, BlogSeriesFeed
 from blog.robots import robots_txt
+from blog.sitemaps import public_sitemap
 
 handler404 = "blog.views.custom_404"
 handler500 = "blog.views.custom_500"
@@ -99,7 +99,23 @@ urlpatterns = [
         name="legacy-rss-feed",
     ),
     path("feed/atom/", BlogAtomFeed(), name="blog-atom-feed"),
-    path("sitemap.xml", sitemap, name="sitemap"),
+    path("series/", blog_views.series_index, name="blog-series-index"),
+    path(
+        "series/<slug:slug>/feed/",
+        BlogSeriesFeed(),
+        name="blog-series-feed",
+    ),
+    path(
+        "series/<slug:slug>/feed/atom/",
+        BlogSeriesAtomFeed(),
+        name="blog-series-atom-feed",
+    ),
+    path(
+        "series/<slug:slug>/",
+        blog_views.series_detail,
+        name="blog-series-detail",
+    ),
+    path("sitemap.xml", public_sitemap, name="sitemap"),
 ]
 
 urlpatterns += _local_media_urlpatterns()

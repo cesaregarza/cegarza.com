@@ -91,12 +91,48 @@
         </article>
     {% endwith %}
 
-    {% block series_groups %}{% endblock %}
+    {% block series_groups %}
+        {% for group in series_groups %}
+            <section class="series-group" aria-labelledby="series-{{ group.series.slug }}">
+                <header class="series-group__header">
+                    <div class="series-group__identity">
+                        <span class="badge badge--series">series</span>
+                        <h2 id="series-{{ group.series.slug }}">
+                            <a href="{{ group.url }}">{{ group.series.title }}</a>
+                        </h2>
+                        <span class="series-group__meta">
+                            {{ group.part_count }} part{{ group.part_count|pluralize }}
+                            · {{ group.total_minutes }} min
+                            · {{ group.series.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="series-group__action">
+                        <span class="series-progress" aria-hidden="true">
+                            {% for part in group.parts %}<span class="is-filled"></span>{% endfor %}
+                        </span>
+                        <a href="{{ group.url }}">series →</a>
+                    </div>
+                </header>
+                <ol class="series-part-list">
+                    {% for part in group.parts %}
+                        <li class="series-part{% if part.is_latest %} is-current{% endif %}">
+                            <span class="series-part__number">{{ part.number|stringformat:"02d" }}</span>
+                            <a class="series-part__title" href="{{ part.url }}">{{ part.page.title }}</a>
+                            <span class="series-part__meta">
+                                {% if part.is_latest %}<span class="series-part__newest">newest</span>{% endif %}
+                                <span>{{ part.readtime }}</span>
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ol>
+            </section>
+        {% endfor %}
+    {% endblock %}
 
-    {% if posts|length > 1 %}
+    {% if standalone_posts %}
         <div class="index-divider">standalone</div>
         <section class="post-grid" aria-label="Standalone posts">
-            {% for post in posts|slice:"1:" %}
+            {% for post in standalone_posts %}
                 <article class="post-cell">
                     <p class="post-meta">
                         {% if post.date %}

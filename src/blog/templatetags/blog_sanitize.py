@@ -20,7 +20,9 @@ def current_page_full_url(context, page):
     """Build a page URL against the Site selected by the current request."""
 
     request = context.get("request")
-    if request is None or page is None:
+    if page is None:
+        return context.get("explicit_page_full_url", "")
+    if request is None:
         return ""
     site = Site.find_for_request(request)
     if site is None:

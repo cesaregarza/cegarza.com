@@ -894,7 +894,7 @@ surface, a one-pixel accent rule, a two-pixel radius, and no blur or shadow.
 ### Table of Contents Sidebar
 
 The desktop article rail is a `236px` structural column with series context,
-contents, and actions. Active series rows use a purple two-pixel inset rule;
+contents, and actions. Active series rows use a purple two-pixel leading rule;
 active headings use a fuchsia rule. Below `1100px`, the same rail becomes a
 right-hand drawer over a dark scrim. The reading-progress bar sits flush with
 the sticky header rather than inside a rail card.

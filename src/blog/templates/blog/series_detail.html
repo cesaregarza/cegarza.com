@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}{{ series_group.series.title }}{% endblock %}
+{% block description %}{{ series_group.series.description|default:"An ordered blog series." }}{% endblock %}
+{% block og_title %}{{ series_group.series.title }}{% endblock %}
+{% block og_description %}{{ series_group.series.description|default:"An ordered blog series." }}{% endblock %}
+{% block twitter_title %}{{ series_group.series.title }}{% endblock %}
+{% block twitter_description %}{{ series_group.series.description|default:"An ordered blog series." }}{% endblock %}
+{% block body_class %}page--series-detail{% endblock %}
+
+{% block extra_head %}
+    <link
+        rel="alternate"
+        type="application/rss+xml"
+        title="{{ series_group.series.title }} RSS"
+        href="{{ series_group.feed_url }}"
+    >
+{% endblock %}
+
+{% block content %}
+<header class="series-hero">
+    <p class="eyebrow">
+        series · {{ series_group.part_count }} part{{ series_group.part_count|pluralize }}
+        · {{ series_group.total_minutes }} min
+        · {{ series_group.series.get_status_display }}
+    </p>
+    <h1>{{ series_group.series.title }}</h1>
+    {% if series_group.series.description %}
+        <p>{{ series_group.series.description }}</p>
+    {% endif %}
+    <nav class="series-detail__actions" aria-label="Series feeds">
+        <a href="{{ series_group.feed_url }}">rss</a>
+        <a href="{% url 'blog-series-atom-feed' slug=series_group.series.slug %}">atom</a>
+    </nav>
+</header>
+
+<article class="series-card series-card--detail">
+    <header class="series-card__title-row">
+        <span class="series-card__ordinal">#</span>
+        <h2>All parts</h2>
+        <span class="series-card__meta">{{ series_group.part_count }} published</span>
+        <span class="series-progress" aria-hidden="true">
+            {% for part in series_group.parts %}<span class="is-filled"></span>{% endfor %}
+        </span>
+    </header>
+    <ol class="series-card__parts series-part-list">
+        {% for part in series_group.parts %}
+            <li class="series-part">
+                <span class="series-part__number">{{ part.number|stringformat:"02d" }}</span>
+                <a class="series-part__title" href="{{ part.url }}">{{ part.page.title }}</a>
+                <span class="series-part__meta">
+                    {% if part.page.date %}
+                        <time datetime="{{ part.page.date|date:'Y-m-d' }}">{{ part.page.date|date:"Y-m-d" }}</time>
+                    {% endif %}
+                    <span>{{ part.readtime }}</span>
+                </span>
+            </li>
+        {% endfor %}
+    </ol>
+    {% if series_group.series.next_up %}
+        <p class="post-series-rail__next-up series-detail__next-up">{{ series_group.series.next_up }}</p>
+    {% endif %}
+</article>
+{% endblock %}

@@ -68,7 +68,30 @@
 {% endblock %}
 
 {% block content %}
-{% block post_series_band %}{% endblock %}
+{% block post_series_band %}
+    {% if post_series %}
+        <div class="post-series-band">
+            <div class="post-series-band__identity">
+                <span class="post-series-band__label">series</span>
+                <a class="post-series-band__name" href="{{ post_series.url }}">{{ post_series.series.title }}</a>
+                <span class="post-series-band__separator" aria-hidden="true">/</span>
+                <span class="post-series-band__part">
+                    part {{ series_part.number|stringformat:"02d" }} of {{ post_series.part_count|stringformat:"02d" }}
+                </span>
+            </div>
+            <div class="post-series-band__action">
+                <span class="series-progress" aria-hidden="true">
+                    {% for part in post_series.parts %}
+                        <span
+                            {% if part.number < series_part.number %}class="is-read"{% elif part.number == series_part.number %}class="is-current"{% endif %}
+                        ></span>
+                    {% endfor %}
+                </span>
+                <a href="{{ post_series.url }}">all parts →</a>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
 
 <header class="post-header">
     <p class="post-meta" id="postReadTime">
@@ -92,7 +115,41 @@
 <div class="post-layout">
     <aside class="post-sidebar" id="postOutline" aria-label="Post navigation">
         <div class="post-rail">
-            {% block post_series_rail %}{% endblock %}
+            {% block post_series_rail %}
+                {% if post_series %}
+                    <section class="post-series-rail">
+                        <h2 class="post-rail__label">in this series</h2>
+                        <ol class="post-series-rail__list">
+                            {% for part in post_series.parts %}
+                                <li class="post-series-rail__item{% if part.page.pk == page.pk %} is-current{% endif %}">
+                                    <span class="post-series-rail__number">{{ part.number|stringformat:"02d" }}</span>
+                                    {% if part.page.pk == page.pk %}
+                                        <span>{{ part.page.title }}</span>
+                                    {% else %}
+                                        <a href="{{ part.url }}">{{ part.page.title }}</a>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ol>
+                        {% if post_series.series.next_up %}
+                            <p class="post-series-rail__next-up">{{ post_series.series.next_up }}</p>
+                        {% endif %}
+                    </section>
+                    {% if also_series %}
+                        <section class="post-rail__section post-series-also">
+                            <h2 class="post-rail__label">also in</h2>
+                            <ul class="post-series-also__list">
+                                {% for selection in also_series %}
+                                    <li>
+                                        <a href="{{ selection.group.url }}">{{ selection.group.series.title }}</a>
+                                        <span>{{ selection.part.number|stringformat:"02d" }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </section>
+                    {% endif %}
+                {% endif %}
+            {% endblock %}
 
             {% if toc_items %}
                 <section class="post-rail__section post-toc">
@@ -163,10 +220,54 @@
             </ul>
         {% endif %}
 
-        {% block post_series_end %}{% endblock %}
+        {% block post_series_end %}
+            {% if post_series %}
+                <section class="post-series-end" aria-labelledby="series-end-title">
+                    <header class="post-series-end__header">
+                        {% if series_next %}
+                            <span>next in <span class="post-series-end__proper">{{ post_series.series.title }}</span></span>
+                            <span class="post-series-end__count">
+                                part {{ series_next.number|stringformat:"02d" }} of {{ post_series.part_count|stringformat:"02d" }}
+                            </span>
+                        {% else %}
+                            <span>
+                                {% if post_series.series.status == "complete" %}series complete{% else %}end of{% endif %}
+                                <span class="post-series-end__proper">{{ post_series.series.title }}</span>
+                                {% if post_series.series.status == "ongoing" %}, for now{% endif %}
+                            </span>
+                            <span class="post-series-end__count">
+                                {{ post_series.part_count }} of {{ post_series.part_count }} published
+                            </span>
+                        {% endif %}
+                    </header>
+                    <div class="post-series-end__body">
+                        {% if series_next %}
+                            <h2 id="series-end-title">{{ series_next.page.title }}</h2>
+                            {% if series_next.page.abstract %}<p>{{ series_next.page.abstract }}</p>{% endif %}
+                            <a href="{{ series_next.url }}">continue →</a>
+                        {% else %}
+                            <h2 id="series-end-title">{{ post_series.series.title }}</h2>
+                            {% if post_series.series.next_up %}
+                                <p>{{ post_series.series.next_up }}</p>
+                            {% elif post_series.series.description %}
+                                <p>{{ post_series.series.description }}</p>
+                            {% endif %}
+                            <a href="{{ post_series.url }}">all parts →</a>
+                        {% endif %}
+                    </div>
+                </section>
+            {% endif %}
+        {% endblock %}
 
         <nav class="post-nav" aria-label="Adjacent posts">
-            {% if previous_post %}
+            {% if series_previous %}
+                <a class="post-nav__item" href="{{ series_previous.url }}">
+                    <span>← part {{ series_previous.number|stringformat:"02d" }}</span>
+                    <strong>{{ series_previous.page.title }}</strong>
+                </a>
+            {% elif post_series %}
+                <span class="post-nav__item post-nav__item--empty"></span>
+            {% elif previous_post %}
                 <a class="post-nav__item" href="{% pageurl previous_post %}">
                     <span>← previous</span>
                     <strong>{{ previous_post.title }}</strong>
@@ -174,7 +275,17 @@
             {% else %}
                 <span class="post-nav__item post-nav__item--empty"></span>
             {% endif %}
-            {% if next_post %}
+            {% if series_next %}
+                <a class="post-nav__item post-nav__item--next" href="{{ series_next.url }}">
+                    <span>part {{ series_next.number|stringformat:"02d" }} →</span>
+                    <strong>{{ series_next.page.title }}</strong>
+                </a>
+            {% elif post_series %}
+                <a class="post-nav__item post-nav__item--next" href="{{ post_series.url }}">
+                    <span>series index →</span>
+                    <strong>{{ post_series.series.title }}</strong>
+                </a>
+            {% elif next_post %}
                 <a class="post-nav__item post-nav__item--next" href="{% pageurl next_post %}">
                     <span>next →</span>
                     <strong>{{ next_post.title }}</strong>
