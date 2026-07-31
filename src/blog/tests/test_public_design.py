@@ -80,10 +80,11 @@ class PublicDesignTemplateTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'class="skip-link"')
         self.assertContains(response, 'class="site-nav"')
-        self.assertContains(response, 'href="/about/"')
-        self.assertContains(response, 'class="home-hero"')
-        self.assertContains(response, 'class="signal-field"')
-        self.assertContains(response, 'class="lead-story"')
+        self.assertContains(response, 'class="index-hero"')
+        self.assertContains(response, 'class="index-stats"')
+        self.assertContains(response, 'class="lead-post"')
+        self.assertContains(response, 'id="applets"')
+        self.assertContains(response, "3 interactive notes")
         self.assertContains(response, "A representative technical field note")
         self.assertContains(response, "site-footer__inner")
 
@@ -91,15 +92,17 @@ class PublicDesignTemplateTest(TestCase):
         response = self.get_page("/representative-note/")
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'class="breadcrumbs"')
         self.assertContains(response, 'class="post-header"')
         self.assertContains(response, 'class="content post-content"')
         self.assertContains(response, "First observation")
         self.assertContains(response, "<table>")
         self.assertContains(response, "signal = observations.mean()")
+        self.assertContains(response, 'class="code-block"')
+        self.assertContains(response, 'id="postTocProgress"')
+        self.assertContains(response, 'id="readingStatus"')
         self.assertContains(response, 'aria-controls="postOutline"')
         self.assertContains(response, 'id="postOutline"')
-        self.assertContains(response, 'class="post-endnote"')
+        self.assertContains(response, 'class="post-nav"')
 
     def test_about_page_uses_the_static_content_composition(self):
         response = self.get_page("/about/")
@@ -108,7 +111,7 @@ class PublicDesignTemplateTest(TestCase):
         self.assertContains(response, 'class="content-page"')
         self.assertContains(response, 'class="content-page__body"')
         self.assertContains(response, "An independent technical notebook")
-        self.assertContains(response, 'aria-current="page">About</span>')
+        self.assertContains(response, 'class="content-page__rail"')
 
     def test_error_states_share_tokens_and_remain_noindex(self):
         context = {
@@ -119,19 +122,44 @@ class PublicDesignTemplateTest(TestCase):
         server_error = render_to_string("500.html", context)
 
         self.assertIn('name="robots" content="noindex,nofollow"', not_found)
-        self.assertIn('class="error-panel"', not_found)
-        self.assertIn("This coordinate is empty.", not_found)
-        self.assertIn('class="error-panel"', server_error)
-        self.assertIn("The instrument drifted.", server_error)
+        self.assertIn('class="error-band"', not_found)
+        self.assertIn("There is nothing at this address.", not_found)
+        self.assertIn('class="error-band"', server_error)
+        self.assertIn("The server could not complete that request.", server_error)
 
     def test_css_declares_tokens_focus_and_reduced_motion_contracts(self):
         css_path = Path(settings.BASE_DIR) / "static" / "css" / "site.css"
         css = css_path.read_text(encoding="utf-8")
 
-        self.assertIn("--surface-canvas:", css)
-        self.assertIn("--font-display:", css)
+        self.assertIn("--color-bg:", css)
+        self.assertIn("--color-surface-sunk:", css)
+        self.assertIn("--accent-wash:", css)
+        self.assertIn("--series-wash:", css)
+        self.assertIn("--font-head:", css)
         self.assertIn("--measure-reading:", css)
         self.assertIn(":focus-visible", css)
         self.assertIn("@media (prefers-reduced-motion: reduce)", css)
+        self.assertIn("@media (prefers-color-scheme: light)", css)
         self.assertIn(".post-content table", css)
         self.assertIn(".post-content .katex-display", css)
+        self.assertNotIn("--shadow-panel", css)
+        self.assertNotIn("--color-surface-elevated", css)
+        self.assertNotIn("background-image:", css)
+        self.assertNotIn(".post-card:hover", css)
+
+    def test_console_fonts_are_self_hosted(self):
+        font_dir = Path(settings.BASE_DIR) / "static" / "fonts"
+        expected_fonts = {
+            "archivo-500-latin.woff2",
+            "archivo-600-latin.woff2",
+            "archivo-700-latin.woff2",
+            "ibm-plex-mono-400-latin.woff2",
+            "ibm-plex-mono-500-latin.woff2",
+            "ibm-plex-mono-600-latin.woff2",
+            "ibm-plex-sans-400-latin.woff2",
+            "ibm-plex-sans-500-latin.woff2",
+            "ibm-plex-sans-600-latin.woff2",
+            "ibm-plex-sans-700-latin.woff2",
+        }
+
+        self.assertTrue(expected_fonts.issubset({path.name for path in font_dir.glob("*.woff2")}))

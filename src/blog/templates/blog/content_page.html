@@ -4,24 +4,20 @@
 {% block body_class %}page--content{% endblock %}
 
 {% block content %}
-<nav class="breadcrumbs" aria-label="Breadcrumb">
-    <a href="{{ site_home_url|default:'/' }}">Writing</a>
-    <span aria-hidden="true">/</span>
-    <span aria-current="page">{{ page.title }}</span>
-</nav>
+<header class="content-page__header">
+    <p class="eyebrow">about · open notebook</p>
+    <h1>{{ page.title }}</h1>
+    {% if page.search_description %}
+        <p>{{ page.search_description }}</p>
+    {% endif %}
+</header>
 
 <article class="content-page">
-    <header class="content-page__header">
-        <p class="eyebrow">About the notebook</p>
-        <h1 class="page-title">{{ page.title }}</h1>
-        <p class="content-page__dek">The person, purpose, and practice behind {{ site_name }}.</p>
-    </header>
+    <aside class="content-page__rail" aria-label="Section">
+        <span>about</span>
+        <a href="{{ site_home_url|default:'/' }}">posts →</a>
+    </aside>
     <div class="content-page__body">
-        <aside class="content-page__rail" aria-hidden="true">
-            <span>BTG</span>
-            <i></i>
-            <small>field notes</small>
-        </aside>
         <div class="content post-content">
             {% for block in page.body %}
                 {% include "blog/blocks/render_block.html" with block=block %}

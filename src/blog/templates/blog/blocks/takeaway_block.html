@@ -1,12 +1,9 @@
 {% load wagtailcore_tags wagtailimages_tags wagtailmarkdown %}
 <aside class="takeaway takeaway--{{ value.color|default:'blue' }}">
-    <div class="takeaway__icon" aria-hidden="true"></div>
-    <div class="takeaway__content">
-        <div class="takeaway__title">
-            {{ value.title|default:"Key takeaway" }}
-        </div>
-        <div class="takeaway__body">
-            {{ value.body|markdown }}
-        </div>
+    <div class="takeaway__title">
+        {{ value.title|default:"Key takeaway" }}
+    </div>
+    <div class="takeaway__body">
+        {{ value.body|markdown }}
     </div>
 </aside>

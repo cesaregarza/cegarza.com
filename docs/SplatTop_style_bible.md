@@ -836,134 +836,68 @@ transition, duration-300
 
 ## Blog-Specific Components
 
-The SplatTop Blog (`blog.splat.top`) is a Wagtail CMS site that extends the core design system with blog-specific patterns.
+The SplatTop Blog is intentionally flatter than the product UI. The document is
+the surface: `1px` structural rules replace elevated panels, and no blog
+component uses blur, a drop shadow, a background wash, or more than a `2px`
+radius. The only gradients are the functional `2px` reading-progress variants.
 
 ### Blog Typography
 
-| Element | Size | Weight | Color |
-|---------|------|--------|-------|
-| Post title | `2.2rem` (mobile: `1.6rem`) | 800 | `#ffffff` |
-| Post body | `1.05rem` | 400 | `#c9d1d9` (secondary text) |
-| Post body headings (h1-h3) | `1.7rem` / `1.4rem` / `1.15rem` | 700 | `#ffffff` |
-| Code inline | `0.88em` | 400 | `#e879f9` (fuchsia lighter) |
-| Code blocks | `0.9rem` | 400 | `#c9d1d9` on `rgba(0,0,0,0.35)` |
-| Blockquote | `1.05rem` italic | 400 | `#c9d1d9` with `3px` left border `#ab5ab7` |
+| Role | Family | Desktop size | Weight | Line height |
+|------|--------|--------------|--------|-------------|
+| Index title | Archivo | `44px` | 700 | 1.02 |
+| Post title | Archivo | `46px` | 700 | 1.02 |
+| Article h2 / h3 | Archivo | `26px` / `19px` | 700 / 600 | 1.2 / 1.3 |
+| Body | IBM Plex Sans | `16px` | 400 | 1.8 |
+| Metadata and navigation | IBM Plex Mono | `9.5–12.5px` | 400–600 | 1.4 |
+| Code | IBM Plex Mono | `13px` | 400 | 1.7 |
 
-### Post Cards (Blog Index)
+Archivo, IBM Plex Sans, and IBM Plex Mono are self-hosted in
+`src/static/fonts/`. Mono interface labels are lowercased with CSS; author
+names, post titles, series names, and product names retain source casing.
 
-```css
-.post-card {
-  background: var(--color-surface-subtle);           /* rgba(255,255,255,0.022) */
-  border: 1px solid var(--border-soft);              /* rgba(255,255,255,0.08) */
-  border-radius: 16px;
-  box-shadow: var(--shadow-panel);                   /* 0 10px 26px rgba(1,4,9,0.45) */
-  transition: transform 260ms ease, box-shadow 260ms ease;
-}
+### Index grid
 
-.post-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-elevated);                /* 0 18px 42px rgba(1,4,9,0.65) */
-}
+The index hero, statistics, lead post, series groups, standalone grid, applet
+directory, and pagination are full-width bands. `.post-cell` has no fill,
+radius, border shell, shadow, or hover motion. Column and row rules provide all
+separation.
 
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .post-card { transition: none; }
-  .post-card:hover { transform: none; }
-}
-```
+Fuchsia identifies active/newest state. Purple identifies series. A series
+progress control is always `116px` wide so segment count changes without
+changing the component's visual weight.
 
 ### Collapsible Blocks
 
-Used for expandable content sections. Each category maps to a CSS modifier class
-(e.g. `.collapsible-block--subquest`) and uses CSS custom properties for theming.
+Collapsibles have a one-pixel category rule and a two-pixel radius. The summary
+uses a flat category wash; its category badge is solid, and the toggle is a
+monospace `+` / `−`. Open state adds only a bottom rule.
 
-| Category | Model value | Accent | Background | Badge text |
-|----------|------------|--------|------------|------------|
-| Default | `""` | (inherits base purple) | (inherits base) | — |
-| Explainer | `"explainer"` | `rgba(56,189,248,0.25)` (sky) | `rgba(56,189,248,0.1)` | `#cffafe` |
-| Technical | `"technical"` | `rgba(193,131,225,0.3)` (purple-light) | `rgba(193,131,225,0.12)` | `#f3e8ff` |
-| Extra | `"extra"` | `rgba(236,72,153,0.28)` (pink) | `rgba(236,72,153,0.1)` | `#fde2f2` |
-| Side Quest | `"subquest"` | `rgba(253,230,138,0.32)` (amber) | `rgba(253,230,138,0.12)` | `#fde68a` |
-
-Each category sets these custom properties: `--collapsible-accent`, `--collapsible-accent-bg`,
-`--collapsible-accent-hover`, `--collapsible-badge-bg`, `--collapsible-badge-border`,
-`--collapsible-badge-text`, `--collapsible-icon`.
+| Category | Model value | Accent | Wash | Rule |
+|----------|-------------|--------|------|------|
+| Explainer | `"explainer"` | `#7dd3fc` | sky 8% | sky 24% |
+| Technical | `"technical"` | `#c183e1` | purple 10% | purple 30% |
+| Extra | `"extra"` | `#f472b6` | pink 10% | pink 28% |
+| Side Quest | `"subquest"` | `#fcd34d` | gold 9% | gold 28% |
 
 ### Key Takeaway Callouts
 
-Highlighted callout boxes for important information. Uses CSS custom properties
-(`--takeaway-accent`, `--takeaway-bg`, `--takeaway-title`, `--takeaway-glow`, `--takeaway-shadow`).
-
-| Color | CSS class | Accent | Background | Title text | Glow |
-|-------|-----------|--------|------------|------------|------|
-| Blue (default) | `.takeaway` | `rgba(56,189,248,0.35)` | `rgba(56,189,248,0.08)` | `#cffafe` | `rgba(56,189,248,0.6)` |
-| Purple | `.takeaway--purple` | `rgba(217,70,239,0.35)` | `rgba(217,70,239,0.1)` | `#f6e7fb` | `rgba(217,70,239,0.7)` |
-| Pink | `.takeaway--pink` | `rgba(236,72,153,0.35)` | `rgba(236,72,153,0.1)` | `#fde2f2` | `rgba(236,72,153,0.7)` |
-| Gold | `.takeaway--gold` | `rgba(253,230,138,0.45)` | `rgba(253,230,138,0.12)` | `#fde68a` | `rgba(253,230,138,0.75)` |
+Takeaways reuse the category washes and rules above. There is no icon dot,
+gradient, glow, or shadow. `.takeaway--series` uses the separate series palette
+for recap content.
 
 ### Glossary Tooltips
 
-```css
-.glossary-term {
-  color: var(--color-fuchsia-lighter);               /* #e879f9 */
-  border-bottom: 1px dashed rgba(217, 70, 239, 0.55);
-  cursor: help;
-  transition: color 120ms ease, border-color 120ms ease;
-}
-
-.glossary-term:hover {
-  color: #ffffff;
-  border-bottom-color: rgba(244, 114, 182, 0.9);
-}
-
-.glossary-tooltip {
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(217, 70, 239, 0.35);
-  border-radius: 12px;
-  backdrop-filter: blur(16px);
-  box-shadow: 0 16px 36px rgba(1, 4, 9, 0.7);
-  font-size: 0.85rem;
-  max-width: min(320px, 80vw);
-}
-```
+Terms use a dashed fuchsia underline. The `300px` tooltip uses the standard
+surface, a one-pixel accent rule, a two-pixel radius, and no blur or shadow.
 
 ### Table of Contents Sidebar
 
-The TOC lives in `.post-sidebar` > `.post-toc`, using sticky positioning on desktop
-and a slide-in drawer on mobile (below 1100px).
-
-```css
-.post-toc {
-  border: 1px solid rgba(217, 70, 239, 0.2);
-  background: rgba(15, 23, 42, 0.7);
-  border-radius: 16px;
-  backdrop-filter: blur(16px);
-}
-
-.post-toc__link {
-  font-size: 0.82rem;
-  color: var(--color-text-muted);                    /* #8b949e */
-  border-radius: 10px;
-  border: 1px solid transparent;
-}
-
-.post-toc__link:hover {
-  color: var(--color-text-primary);
-  background: rgba(217, 70, 239, 0.08);
-  border-color: rgba(217, 70, 239, 0.18);
-}
-
-.post-toc__link.is-active {
-  color: #fdf4ff;
-  background: rgba(217, 70, 239, 0.18);
-  border-color: rgba(217, 70, 239, 0.35);
-}
-
-/* Progress bar at top */
-.post-toc__progress-bar {
-  background: linear-gradient(90deg, var(--color-fuchsia), var(--color-fuchsia-light));
-}
-```
+The desktop article rail is a `236px` structural column with series context,
+contents, and actions. Active series rows use a purple two-pixel inset rule;
+active headings use a fuchsia rule. Below `1100px`, the same rail becomes a
+right-hand drawer over a dark scrim. The reading-progress bar sits flush with
+the sticky header rather than inside a rail card.
 
 ---
 

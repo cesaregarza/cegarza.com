@@ -4,26 +4,25 @@
 {% block body_class %}page--directory{% endblock %}
 
 {% block content %}
-<section class="page-hero page-hero--directory">
-    <p class="eyebrow">Explore</p>
-    <h1 class="page-title">{{ page.title }}</h1>
+<header class="directory-hero">
+    <p class="eyebrow">directory · splat.top</p>
+    <h1>{{ page.title }}</h1>
     {% if page.search_description %}
-        <p class="page-intro">{{ page.search_description }}</p>
+        <p>{{ page.search_description }}</p>
     {% endif %}
-</section>
+</header>
 
-<section class="link-grid">
+<nav class="directory-grid" aria-label="Site sections">
     {% for child in page.get_children.live %}
-        <a class="link-card" href="{% pageurl child %}">
-            <span class="link-card__index">0{{ forloop.counter }}</span>
-            <span class="link-card__title">{{ child.title }}</span>
-            <span class="link-card__meta">Explore page <span aria-hidden="true">→</span></span>
+        <a class="directory-grid__item" href="{% pageurl child %}">
+            <span class="directory-grid__index">0{{ forloop.counter }}</span>
+            <strong>{{ child.title }}</strong>
+            <span>open →</span>
         </a>
     {% empty %}
         <div class="empty-state">
-            <span class="empty-state__mark" aria-hidden="true">∅</span>
             <p>No pages yet.</p>
         </div>
     {% endfor %}
-</section>
+</nav>
 {% endblock %}

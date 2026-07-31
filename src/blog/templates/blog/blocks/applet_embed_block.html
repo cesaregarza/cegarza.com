@@ -1,13 +1,27 @@
 {% if value.src %}
-    <iframe
-        src="{{ value.src }}"
-        class="applet-frame"
-        data-applet-embed="true"
-        {% if value.use_full_height %}data-applet-full-height="true"{% endif %}
-        {% if not value.use_full_height and value.max_height %}data-applet-max-height="{{ value.max_height }}"{% endif %}
-        title="{{ value.title }}"
-        loading="{% if value.lazy_load %}lazy{% else %}eager{% endif %}"
-        referrerpolicy="strict-origin-when-cross-origin"
-        {% if value.style_overrides %}style="{{ value.style_overrides }}"{% endif %}
-    ></iframe>
+    <figure class="applet-embed" data-applet-shell>
+        <div class="applet-embed__chrome">
+            <span>
+                <strong>applet</strong>
+                <span class="applet-embed__title">{{ value.title }}</span>
+            </span>
+            <span class="applet-embed__actions">
+                <button type="button" data-applet-reset>reset</button>
+                <span aria-hidden="true">·</span>
+                <button type="button" data-applet-fullscreen>fullscreen</button>
+            </span>
+        </div>
+        <iframe
+            src="{{ value.src }}"
+            class="applet-frame"
+            data-applet-embed="true"
+            {% if value.use_full_height %}data-applet-full-height="true"{% endif %}
+            {% if not value.use_full_height and value.max_height %}data-applet-max-height="{{ value.max_height }}"{% endif %}
+            title="{{ value.title }}"
+            loading="{% if value.lazy_load %}lazy{% else %}eager{% endif %}"
+            referrerpolicy="strict-origin-when-cross-origin"
+            {% if value.style_overrides %}style="{{ value.style_overrides }}"{% endif %}
+        ></iframe>
+        <figcaption>interactive note · changes stay in your browser</figcaption>
+    </figure>
 {% endif %}

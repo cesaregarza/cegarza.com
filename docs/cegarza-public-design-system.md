@@ -1,91 +1,86 @@
-# cegarza.com public design system
+# SplatTop Blog public design system
 
-The public site uses the **Night Observatory** visual direction: an editorial
-notebook viewed through the language of plots, coordinates, and instrument
-panels. It is deliberately quieter than a product dashboard. Typography and
-reading rhythm carry the content; orchid, ember, and cyan behave as small
-signals rather than decoration spread across every surface.
+The public blog uses the **Console + series** direction: one flat page surface,
+lowercase monospace chrome, Archivo headings, and structural hairlines. Content
+is grouped by hierarchy rather than placed inside floating cards.
 
 ## Principles
 
-1. **The essay is the interface.** Article copy stays near a 70-character
-   measure, uses generous leading, and gives headings enough space to act as
-   navigation landmarks.
-2. **Technical without looking like a terminal.** Display text uses the
-   platform serif stack. Monospace is reserved for metadata, coordinates, code,
-   and compact navigation labels.
-3. **Signal, not glow.** Orchid is the brand signal, ember marks interruption or
-   emphasis, and cyan is a rare supporting datum. Effects never reduce text
-   contrast.
-4. **Content imagery is evidence.** Featured images receive consistent crops on
-   indexes and keep their intrinsic proportions in articles. Diagrams, tables,
-   code, applets, and captions remain part of the reading column rather than
-   being forced into decorative card treatments.
-5. **Motion explains state.** The masthead signal points pulse gently and cards
-   lift on hover. All nonessential motion is removed by
-   `prefers-reduced-motion`.
+1. **The page is the surface.** Header, hero, lists, article rail, and footer are
+   bands in one grid. A one-pixel rule separates regions; nothing floats above
+   the page.
+2. **Hierarchy comes from type.** Archivo carries titles and headings. IBM Plex
+   Sans carries reading copy. IBM Plex Mono is reserved for navigation,
+   metadata, labels, code, and numeric status.
+3. **Chrome is lowercase, content is not.** Mono labels use
+   `text-transform: lowercase`; author names, post titles, and series names opt
+   out so source content keeps its intended casing.
+4. **Accent means state.** Fuchsia marks the current page, newest content, and
+   in-page navigation. Purple is reserved for series identity and progress.
+5. **Nothing jumps on hover.** Hover changes color or a flat background only.
+   Entry animations, lifts, zooms, shadows, and decorative washes are absent.
 
-## Tokens
+## Canonical tokens
 
-The canonical tokens live at the top of `src/static/css/site.css`.
+Tokens live at the top of `src/static/css/site.css`.
 
 | Group | Contract |
 | --- | --- |
-| Canvas | `--ink-1000` through `--ink-800` |
-| Copy | `--paper-50`, `--paper-100`, `--paper-300`, `--paper-500` |
-| Signals | `--orchid-*`, `--ember-300`, `--cyan-300` |
-| Semantics | `--surface-*`, `--text-*`, `--rule*` |
-| Type | `--font-display`, `--font-body`, `--font-code`, `--measure-reading` |
-| Rhythm | `--space-1` through `--space-8`, `--radius-*` |
+| Surfaces | `--color-bg`, `--color-surface`, `--color-surface-2`, `--color-surface-sunk`, `--color-surface-rail` |
+| Structure | `--rule`, `--rule-soft` |
+| Text | `--color-text-primary`, `--color-text-secondary`, `--color-text-muted`, `--color-text-disabled` |
+| Active state | `--accent*` |
+| Series | `--series*` |
+| Callouts | `--cat-explainer`, `--cat-technical`, `--cat-extra`, `--cat-subquest` |
+| Type | `--font-ui`, `--font-head`, `--font-mono`, `--measure-reading` |
 
-Legacy `--color-*` aliases remain intentionally mapped to the new semantic
-tokens. Imported Wagtail blocks and the embedded applets rely on those names,
-so this keeps content rendering stable while the public shell evolves.
+The dark palette is the default. `prefers-color-scheme: light` switches the
+document to the light palette, and a `data-theme="light|dark"` attribute on
+`html` can override the OS choice. All three font families are self-hosted in
+`src/static/fonts/` with `font-display: swap`.
 
-## Reusable template primitives
+## Reusable primitives
 
-- `.eyebrow`, `.story-meta`, and `.story-tags` describe editorial metadata.
-- `.button-primary`, `.text-link`, and `.story-link` cover interactive emphasis.
-- `.site-title`, `.site-nav`, and `.site-footer` form the shared shell.
-- `.home-hero`, `.section-heading`, `.lead-story`, and `.post-card` form index
-  compositions.
-- `.breadcrumbs`, `.post-header`, `.post-content`, `.post-toc`, and
-  `.post-endnote` form long-form article compositions.
-- `.page-hero`, `.content-page`, `.link-grid`, and `.empty-state` cover static
-  and directory pages.
-- `.error-panel` reuses the same tokens for 404 and 500 states without requiring
-  Wagtail page context.
+- `.site-title`, `.site-nav`, `.reading-progress`, and `.site-footer` form the
+  shared chrome.
+- `.index-hero`, `.index-stats`, `.lead-post`, `.series-group`, `.post-grid`,
+  and `.pagination` form the publication index.
+- `.series-hero`, `.series-card`, `.series-progress`, and `.series-part` form
+  series indexes and hubs.
+- `.post-series-band`, `.post-header`, `.post-rail`, `.post-toc`,
+  `.post-series-end`, and `.post-nav` form long-form posts.
+- `.takeaway`, `.collapsible-block`, `.glossary-tooltip`, `.code-block`,
+  `.applet-embed`, tables, and blockquotes share the same two-pixel-or-less
+  radius and rule system.
+- `.content-page`, `.directory-grid`, and `.error-state` cover public pages
+  outside the main publication flow.
 
-Templates should compose these primitives. New page-specific one-off colors,
-type scales, shadows, or button styles should be promoted to a semantic token
-or a shared primitive before use.
+## Responsive contract
 
-## Responsive behavior
-
-- **Desktop (1100px and wider):** articles use a sticky 18rem outline rail;
-  index mastheads and lead stories use split compositions.
-- **Tablet (701px–1099px):** the article outline becomes the existing accessible
-  drawer; mastheads and lead stories stack without changing reading order.
-- **Mobile (700px and narrower):** navigation is compressed, RSS moves to the
-  footer, metadata stacks, article padding tightens, and all cards become one
-  column. Touch targets remain at least 44px where controls are present.
+- **1100px and wider:** posts use a 236px sticky rail and a flexible article
+  column; post and directory indexes use two columns.
+- **700–1099px:** the rail becomes the existing right-hand drawer with a scrim;
+  grid lists collapse to one column.
+- **Below 700px:** gutters become 16px, titles become 27px, featured images use
+  a 150px crop, series bands wrap, and interactive targets remain at least
+  44px.
 
 No meaningful content is hidden at a breakpoint.
 
 ## Accessibility and performance
 
-- A skip link precedes the shared shell.
-- Native landmarks, labeled navigation, semantic dates, breadcrumb state, and
-  outline button relationships are present in templates.
-- `:focus-visible` uses the high-contrast ember signal globally.
-- Muted text is never used for primary article copy.
-- Decorative field plots are CSS-only and `aria-hidden`; content images remain
-  real Wagtail renditions.
-- Index images below the lead story use lazy loading and async decoding.
-- The system loads no web font, framework, or decorative image dependency.
-- Motion is disabled under `prefers-reduced-motion`.
+- A skip link precedes the sticky header.
+- Every interactive control has a global `:focus-visible` outline.
+- The mobile contents drawer retains its labeled control, scrim, Escape
+  handling, and focusable links.
+- Body copy remains at least 15px with a maximum 62-character measure.
+- Tables, code, math, and applets contain their own horizontal overflow.
+- Only the functional two-pixel reading-progress bar uses a gradient.
+- `prefers-reduced-motion` removes transition duration.
+- The index lead image is eager; subsequent content and Wagtail block images
+  remain lazy.
 
-When visually reviewing a change, check the index, About page, 404, one
-text-heavy article, and one diagram/image-heavy article at 390px and 1440px
-widths. Also verify keyboard focus, the mobile outline drawer, horizontal table
-and math overflow, and the RSS/sitemap routes.
+Visual review covers the index, About, 404, a text-heavy post, and a
+diagram/image/table/code-heavy post at 390px and 1440px. Series work adds the
+series hub, a first part, a current middle part, and an incomplete latest part
+to the same matrix.

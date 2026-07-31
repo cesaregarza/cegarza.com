@@ -1,6 +1,7 @@
 import hashlib
 import json
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import models
@@ -17,6 +18,22 @@ from wagtailmarkdown.blocks import MarkdownBlock
 
 from .post_processing import format_minutes, render_blog_body
 from .site_urls import page_path_for_site
+
+BLOG_BODY_RENDER_VERSION = "console-v1"
+APPLET_CATALOG = (
+    {
+        "title": "Loser’s bracket, winner’s bias",
+        "path": "applets/loser-winner.html",
+    },
+    {
+        "title": "PageRank, forward and reverse",
+        "path": "applets/pagerank-forward-reverse.html",
+    },
+    {
+        "title": "Volume cancellation",
+        "path": "applets/pagerank-volume-cancel.html",
+    },
+)
 
 
 class CodeBlock(blocks.StructBlock):
@@ -312,6 +329,10 @@ class BlogIndexPage(Page):
         context["page_obj"] = page_obj
         context["paginator"] = paginator
         context["is_paginated"] = paginator.num_pages > 1
+        context["series_count"] = 0
+        context["applets"] = APPLET_CATALOG
+        context["applet_count"] = len(APPLET_CATALOG)
+        context["blog_tags_enabled"] = getattr(settings, "BLOG_TAGS_ENABLED", False)
         return context
 
     class Meta:
@@ -428,7 +449,8 @@ class BlogPage(GhostContentFields, Page):
             )
         except TypeError:
             payload = json.dumps(str(raw_data), ensure_ascii=True)
-        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        versioned_payload = f"{BLOG_BODY_RENDER_VERSION}:{payload}"
+        return hashlib.sha256(versioned_payload.encode("utf-8")).hexdigest()
 
     def _render_context_from_cache(self):
         fallback_readtime = format_minutes(0)
@@ -472,9 +494,25 @@ class BlogPage(GhostContentFields, Page):
     def get_context(self, request):
         context = super().get_context(request)
         context.update(self.get_render_context(request=request))
+        context["blog_tags_enabled"] = getattr(settings, "BLOG_TAGS_ENABLED", False)
         site = Site.find_for_request(request)
         if site:
             context["blog_index_url"] = page_path_for_site(self.get_parent(), site)
+        siblings = list(
+            BlogPage.objects.child_of(self.get_parent())
+            .live()
+            .public()
+            .order_by("first_published_at", "pk")
+        )
+        current_index = next(
+            (index for index, post in enumerate(siblings) if post.pk == self.pk),
+            None,
+        )
+        if current_index is not None:
+            if current_index > 0:
+                context["previous_post"] = siblings[current_index - 1]
+            if current_index + 1 < len(siblings):
+                context["next_post"] = siblings[current_index + 1]
         return context
 
     @property

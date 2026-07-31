@@ -52,48 +52,89 @@
 
 {% block body_class %}page--article{% endblock %}
 
+{% block primary_navigation %}
+    <p
+        class="reading-status"
+        id="readingStatus"
+        data-read-minutes="{{ readtime_main|default:'1 min' }}"
+        aria-live="polite"
+    >0% · {{ readtime_main|default:"1 min" }} left</p>
+{% endblock %}
+
+{% block header_progress %}
+    <div class="reading-progress" aria-hidden="true">
+        <span class="reading-progress__bar" id="postTocProgress"></span>
+    </div>
+{% endblock %}
+
 {% block content %}
-<nav class="breadcrumbs" aria-label="Breadcrumb">
-    <a href="{{ blog_index_url|default:site_home_url|default:'/' }}">Writing</a>
-    <span aria-hidden="true">/</span>
-    <span aria-current="page">{{ page.title }}</span>
-</nav>
+{% block post_series_band %}{% endblock %}
+
+<header class="post-header">
+    <p class="post-meta" id="postReadTime">
+        {% if page.date %}
+            <time datetime="{{ page.date|date:'Y-m-d' }}">{{ page.date|date:"Y-m-d" }}</time>
+            <span aria-hidden="true">·</span>
+        {% endif %}
+        <span class="post-meta__proper">{{ page.primary_author.name|default:site_author }}</span>
+        <span aria-hidden="true">·</span>
+        <span class="post-readtime__main">{{ readtime_main|default:"— min" }}</span>
+        {% if readtime_deep %}
+            <span class="post-readtime__deep">+{{ readtime_deep }} deep</span>
+        {% endif %}
+    </p>
+    <h1>{{ page.title }}</h1>
+    {% if page.abstract %}
+        <p class="post-header__abstract">{{ page.abstract }}</p>
+    {% endif %}
+</header>
 
 <div class="post-layout">
-    <article class="post">
-        <header class="post-header">
-            <p class="eyebrow">Field note</p>
-            <h1 class="post-title">{{ page.title }}</h1>
-            {% if page.abstract %}
-                <p class="post-abstract">{{ page.abstract }}</p>
-            {% endif %}
-            <div class="post-byline">
-                <div class="post-byline__item">
-                    <span class="post-byline__label">Written by</span>
-                    <span>{{ page.primary_author.name|default:site_author }}</span>
-                </div>
-                {% if page.date %}
-                    <div class="post-byline__item">
-                        <span class="post-byline__label">Published</span>
-                        <time datetime="{{ page.date|date:'Y-m-d' }}">{{ page.date|date:"M j, Y" }}</time>
-                    </div>
-                {% endif %}
-                <div class="post-readtime post-byline__item" id="postReadTime" aria-live="polite">
-                    <span class="post-byline__label">Reading time</span>
-                    <span class="post-readtime__main">{{ readtime_main|default:"-- min" }} main path</span>
-                    <span class="post-readtime__divider" aria-hidden="true">/</span>
-                    <span class="post-readtime__deep">{{ readtime_deep|default:"-- min" }} with deep dives</span>
-                </div>
-            </div>
-            {% if page.tags.exists %}
-                <ul class="story-tags post-tags" aria-label="Topics">
-                    {% for tag in page.tags.all %}<li>{{ tag.name }}</li>{% endfor %}
-                </ul>
-            {% endif %}
-        </header>
+    <aside class="post-sidebar" id="postOutline" aria-label="Post navigation">
+        <div class="post-rail">
+            {% block post_series_rail %}{% endblock %}
 
+            {% if toc_items %}
+                <section class="post-rail__section post-toc">
+                    <h2 class="post-rail__label">contents</h2>
+                    <p class="post-toc__crumb" id="postTocCrumb">{{ toc_crumb|default:"On this page" }}</p>
+                    <nav class="post-toc__nav" aria-label="Table of contents">
+                        <ol class="post-toc__list" id="postTocList">
+                            {% for item in toc_items %}
+                                <li class="post-toc__item post-toc__item--{{ item.level }}" data-level="{{ item.level }}">
+                                    <a
+                                        class="post-toc__link"
+                                        href="#{{ item.id }}"
+                                        data-toc-id="{{ item.id }}"
+                                        {% if item.parent_id %}data-parent-id="{{ item.parent_id }}"{% endif %}
+                                        {% if item.grandparent_id %}data-grandparent-id="{{ item.grandparent_id }}"{% endif %}
+                                    >
+                                        {{ item.text }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ol>
+                    </nav>
+                </section>
+            {% endif %}
+
+            <nav class="post-rail__actions" aria-label="Article actions">
+                <a href="{{ blog_index_url|default:site_home_url|default:'/' }}">&larr; Back to posts</a>
+                <button type="button" data-share-action data-share-url="{{ current_page_url }}">share</button>
+                <button
+                    type="button"
+                    data-cite-action
+                    data-citation="{{ page.primary_author.name|default:site_author }}. “{{ page.title }}.” {{ site_name }}{% if page.date %}, {{ page.date|date:'Y' }}{% endif %}."
+                >cite</button>
+                <a href="#main-content">↑ top</a>
+            </nav>
+        </div>
+    </aside>
+    <div class="post-toc-backdrop" id="postTocBackdrop" aria-hidden="true"></div>
+
+    <article class="post">
         {% if page.featured_image %}
-            {% image page.featured_image width-1200 as img %}
+            {% image page.featured_image fill-1200x560 as img %}
             <figure class="featured-image">
                 <img
                     src="{{ img.url }}"
@@ -116,55 +157,37 @@
             {% endif %}
         </div>
 
-        <footer class="post-endnote">
-            <span class="post-endnote__mark" aria-hidden="true">∎</span>
-            <div>
-                <p class="post-endnote__eyebrow">End note</p>
-                <p>Thanks for reading. More field notes live in the notebook.</p>
-            </div>
-            <a class="text-link" href="{{ blog_index_url|default:site_home_url|default:'/' }}">
-                Browse all writing <span aria-hidden="true">→</span>
-            </a>
-        </footer>
+        {% if blog_tags_enabled and page.tags.exists %}
+            <ul class="post-tags" aria-label="Topics">
+                {% for tag in page.tags.all %}<li>{{ tag.name }}</li>{% endfor %}
+            </ul>
+        {% endif %}
+
+        {% block post_series_end %}{% endblock %}
+
+        <nav class="post-nav" aria-label="Adjacent posts">
+            {% if previous_post %}
+                <a class="post-nav__item" href="{% pageurl previous_post %}">
+                    <span>← previous</span>
+                    <strong>{{ previous_post.title }}</strong>
+                </a>
+            {% else %}
+                <span class="post-nav__item post-nav__item--empty"></span>
+            {% endif %}
+            {% if next_post %}
+                <a class="post-nav__item post-nav__item--next" href="{% pageurl next_post %}">
+                    <span>next →</span>
+                    <strong>{{ next_post.title }}</strong>
+                </a>
+            {% else %}
+                <a class="post-nav__item post-nav__item--next" href="{{ blog_index_url|default:site_home_url|default:'/' }}">
+                    <span>posts index →</span>
+                    <strong>all posts</strong>
+                </a>
+            {% endif %}
+        </nav>
     </article>
-
-    {% if toc_items %}
-        <aside class="post-sidebar" id="postOutline" aria-label="Post navigation">
-            <div class="post-toc">
-                <div class="post-toc__progress">
-                    <span class="post-toc__progress-bar" id="postTocProgress"></span>
-                </div>
-                <div class="post-toc__header">
-                    <div class="post-toc__eyebrow">Reading position</div>
-                    <div class="post-toc__crumb" id="postTocCrumb">{{ toc_crumb|default:"On this page" }}</div>
-                </div>
-                <div class="post-toc__title">On this page</div>
-                <nav class="post-toc__nav" aria-label="Table of contents">
-                    <ul class="post-toc__list" id="postTocList">
-                        {% for item in toc_items %}
-                            <li class="post-toc__item post-toc__item--{{ item.level }}" data-level="{{ item.level }}">
-                                <a
-                                    class="post-toc__link"
-                                    href="#{{ item.id }}"
-                                    data-toc-id="{{ item.id }}"
-                                    {% if item.parent_id %}data-parent-id="{{ item.parent_id }}"{% endif %}
-                                    {% if item.grandparent_id %}data-grandparent-id="{{ item.grandparent_id }}"{% endif %}
-                                >
-                                    {{ item.text }}
-                                </a>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </nav>
-            </div>
-        </aside>
-        <div class="post-toc-backdrop" id="postTocBackdrop" aria-hidden="true"></div>
-    {% endif %}
 </div>
-
-<nav class="post-nav">
-    <a href="{{ blog_index_url|default:site_home_url|default:'/' }}">&larr; Back to posts</a>
-</nav>
 {% endblock %}
 
 {% block header_actions %}
@@ -175,10 +198,7 @@
         type="button"
         aria-expanded="false"
         aria-controls="postOutline"
-    >
-        <span class="post-toc-drawer-toggle__icon" aria-hidden="true"><span></span></span>
-        <span class="post-toc-drawer-toggle__label">Outline</span>
-    </button>
+    >contents</button>
 {% endif %}
 {% endblock %}
 
