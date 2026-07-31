@@ -6,12 +6,13 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import models
 from django.dispatch import receiver
-from modelcluster.fields import ParentalManyToManyField
+from modelcluster.fields import ParentalKey, ParentalManyToManyField
+from modelcluster.models import ClusterableModel
 from wagtail import blocks
-from wagtail.admin.panels import FieldPanel, HelpPanel
+from wagtail.admin.panels import FieldPanel, HelpPanel, InlinePanel
 from wagtail.fields import StreamField
 from wagtail.images.blocks import ImageChooserBlock
-from wagtail.models import Page, Site
+from wagtail.models import Orderable, Page, Site
 from wagtail.signals import page_published
 from wagtail.snippets.models import register_snippet
 from wagtailmarkdown.blocks import MarkdownBlock
@@ -270,6 +271,52 @@ class BlogTag(models.Model):
         return self.name
 
 
+@register_snippet
+class BlogSeries(ClusterableModel):
+    """An editorial sequence whose posts have an explicit reading order."""
+
+    class Status(models.TextChoices):
+        ONGOING = "ongoing", "Ongoing"
+        COMPLETE = "complete", "Complete"
+
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(
+        max_length=255,
+        unique=True,
+        help_text="Stable public URL segment used under /series/.",
+    )
+    description = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.ONGOING,
+    )
+    next_up = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Optional public note about the next unpublished part.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    panels = [
+        FieldPanel("title"),
+        FieldPanel("slug"),
+        FieldPanel("description"),
+        FieldPanel("status"),
+        FieldPanel("next_up"),
+        InlinePanel("memberships", label="Parts"),
+    ]
+
+    class Meta:
+        ordering = ["title", "pk"]
+        verbose_name = "Blog series"
+        verbose_name_plural = "Blog series"
+
+    def __str__(self):
+        return self.title
+
+
 class GhostContentFields(models.Model):
     """Stable Ghost identity and timestamps used for repeatable imports."""
 
@@ -325,11 +372,27 @@ class BlogIndexPage(Page):
         paginator = Paginator(posts, 9)
         page_number = request.GET.get("page")
         page_obj = paginator.get_page(page_number)
+        site = Site.find_for_request(request)
+
+        from .series import public_series_for_index
+
+        all_series_groups = public_series_for_index(self, site=site)
+        series_post_ids = {
+            part.page.pk for group in all_series_groups for part in group.parts
+        }
+        current_posts = list(page_obj.object_list)
+        lead_post_id = current_posts[0].pk if current_posts else None
         context["posts"] = page_obj
         context["page_obj"] = page_obj
         context["paginator"] = paginator
         context["is_paginated"] = paginator.num_pages > 1
-        context["series_count"] = 0
+        context["series_groups"] = all_series_groups if page_obj.number == 1 else []
+        context["series_count"] = len(all_series_groups)
+        context["standalone_posts"] = [
+            post
+            for post in current_posts
+            if post.pk != lead_post_id and post.pk not in series_post_ids
+        ]
         context["applets"] = APPLET_CATALOG
         context["applet_count"] = len(APPLET_CATALOG)
         context["blog_tags_enabled"] = getattr(settings, "BLOG_TAGS_ENABLED", False)
@@ -498,21 +561,31 @@ class BlogPage(GhostContentFields, Page):
         site = Site.find_for_request(request)
         if site:
             context["blog_index_url"] = page_path_for_site(self.get_parent(), site)
-        siblings = list(
-            BlogPage.objects.child_of(self.get_parent())
-            .live()
-            .public()
-            .order_by("first_published_at", "pk")
+
+        from .series import public_series_context_for_page
+
+        series_context = public_series_context_for_page(
+            self,
+            self.get_parent().specific,
+            site=site,
         )
-        current_index = next(
-            (index for index, post in enumerate(siblings) if post.pk == self.pk),
-            None,
-        )
-        if current_index is not None:
-            if current_index > 0:
-                context["previous_post"] = siblings[current_index - 1]
-            if current_index + 1 < len(siblings):
-                context["next_post"] = siblings[current_index + 1]
+        context.update(series_context)
+        if not series_context["post_series"]:
+            siblings = list(
+                BlogPage.objects.child_of(self.get_parent())
+                .live()
+                .public()
+                .order_by("first_published_at", "pk")
+            )
+            current_index = next(
+                (index for index, post in enumerate(siblings) if post.pk == self.pk),
+                None,
+            )
+            if current_index is not None:
+                if current_index > 0:
+                    context["previous_post"] = siblings[current_index - 1]
+                if current_index + 1 < len(siblings):
+                    context["next_post"] = siblings[current_index + 1]
         return context
 
     @property
@@ -521,6 +594,63 @@ class BlogPage(GhostContentFields, Page):
 
     class Meta:
         verbose_name = "Blog Post"
+
+
+class BlogSeriesMembership(Orderable):
+    """One ordered post placement inside a blog series."""
+
+    series = ParentalKey(
+        "blog.BlogSeries",
+        on_delete=models.CASCADE,
+        related_name="memberships",
+    )
+    page = models.ForeignKey(
+        "blog.BlogPage",
+        on_delete=models.CASCADE,
+        related_name="series_memberships",
+    )
+    is_primary = models.BooleanField(
+        default=False,
+        help_text="Use this series for the post band and in-series navigation.",
+    )
+
+    panels = [
+        FieldPanel("page"),
+        FieldPanel("is_primary"),
+    ]
+
+    def clean(self):
+        super().clean()
+        if not self.is_primary or not self.page_id:
+            return
+        if (
+            BlogSeriesMembership.objects.filter(
+                page_id=self.page_id,
+                is_primary=True,
+            )
+            .exclude(pk=self.pk)
+            .exists()
+        ):
+            raise ValidationError(
+                {"is_primary": "This post already has a primary series."}
+            )
+
+    class Meta:
+        ordering = ["sort_order", "pk"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["series", "page"],
+                name="blog_unique_series_page",
+            ),
+            models.UniqueConstraint(
+                fields=["page"],
+                condition=models.Q(is_primary=True),
+                name="blog_one_primary_series_per_page",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.series}: {self.page}"
 
 
 class ContentPage(GhostContentFields, Page):

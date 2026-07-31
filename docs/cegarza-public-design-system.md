@@ -55,6 +55,20 @@ document to the light palette, and a `data-theme="light|dark"` attribute on
 - `.content-page`, `.directory-grid`, and `.error-state` cover public pages
   outside the main publication flow.
 
+## Series content contract
+
+`BlogSeries` is a Wagtail snippet. Editors set its stable slug, description,
+ongoing/complete status, optional next-up note, and drag ordered
+`BlogSeriesMembership` rows. A post can belong to more than one series, but a
+database constraint allows at most one membership to be primary; that primary
+series owns the article band and previous/next sequence.
+
+The public series hub is `/series/`, details are `/series/<slug>/`, and each
+detail has RSS and Atom feeds. Every index, count, rail, feed, and sitemap entry
+is assembled from `BlogPage.objects.live().public()` under the Wagtail Site
+selected for the request. Draft, restricted, cross-site, or otherwise
+non-public posts therefore never create a public part or an empty detail route.
+
 ## Responsive contract
 
 - **1100px and wider:** posts use a 236px sticky rail and a flexible article

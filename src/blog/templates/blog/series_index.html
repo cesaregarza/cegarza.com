@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Series{% endblock %}
+{% block description %}Posts written to be read in order.{% endblock %}
+{% block og_title %}Series{% endblock %}
+{% block og_description %}Posts written to be read in order.{% endblock %}
+{% block twitter_title %}Series{% endblock %}
+{% block twitter_description %}Posts written to be read in order.{% endblock %}
+{% block body_class %}page--series{% endblock %}
+
+{% block content %}
+<header class="series-hero">
+    <p class="eyebrow">
+        {{ series_count }} series · {{ series_part_count }} part{{ series_part_count|pluralize }}
+    </p>
+    <h1>Series</h1>
+    <p>Posts written to be read in order. Start at part one, or jump to whichever piece you actually needed.</p>
+</header>
+
+{% if series_groups %}
+    <div class="series-directory">
+        {% for group in series_groups %}
+            <article class="series-card" id="{{ group.series.slug }}">
+                <header class="series-card__title-row">
+                    <span class="series-card__ordinal">{{ forloop.counter|stringformat:"02d" }}</span>
+                    <h2><a href="{{ group.url }}">{{ group.series.title }}</a></h2>
+                    <span class="series-card__meta">
+                        {{ group.part_count }} part{{ group.part_count|pluralize }}
+                        · {{ group.total_minutes }} min
+                        · {{ group.series.get_status_display }}
+                    </span>
+                    <span class="series-progress" aria-hidden="true">
+                        {% for part in group.parts %}<span class="is-filled"></span>{% endfor %}
+                    </span>
+                </header>
+                {% if group.series.description %}
+                    <p class="series-card__description">{{ group.series.description }}</p>
+                {% endif %}
+                <ol class="series-card__parts series-part-list">
+                    {% for part in group.parts|slice:":3" %}
+                        <li class="series-part">
+                            <span class="series-part__number">{{ part.number|stringformat:"02d" }}</span>
+                            <a class="series-part__title" href="{{ part.url }}">{{ part.page.title }}</a>
+                            <span class="series-part__meta">{{ part.readtime }}</span>
+                        </li>
+                    {% endfor %}
+                </ol>
+                {% if group.hidden_part_count %}
+                    <a class="series-card__more" href="{{ group.url }}">
+                        + {{ group.hidden_part_count }} more part{{ group.hidden_part_count|pluralize }}
+                    </a>
+                {% endif %}
+            </article>
+        {% endfor %}
+    </div>
+{% else %}
+    <section class="empty-state">
+        <p class="eyebrow">no public series</p>
+        <h2>The sequences are still being assembled.</h2>
+        <p>Published series will appear here.</p>
+    </section>
+{% endif %}
+{% endblock %}

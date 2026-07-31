@@ -9,6 +9,7 @@ from wagtail.forms import PasswordViewRestrictionForm
 from wagtail.models import PageViewRestriction, Site
 
 from .models import BlogPage
+from .series import public_series_for_index, request_site_and_index
 
 
 def custom_404(request, exception):
@@ -17,6 +18,42 @@ def custom_404(request, exception):
 
 def custom_500(request):
     return render(request, "500.html", status=500)
+
+
+def series_index(request):
+    site, blog_index = request_site_and_index(request)
+    if not site or not blog_index:
+        raise Http404
+    series_groups = public_series_for_index(blog_index, site=site)
+    return render(
+        request,
+        "blog/series_index.html",
+        {
+            "page": None,
+            "explicit_page_full_url": request.build_absolute_uri(),
+            "series_groups": series_groups,
+            "series_count": len(series_groups),
+            "series_part_count": sum(group.part_count for group in series_groups),
+        },
+    )
+
+
+def series_detail(request, slug):
+    site, blog_index = request_site_and_index(request)
+    if not site or not blog_index:
+        raise Http404
+    series_groups = public_series_for_index(blog_index, site=site, slug=slug)
+    if not series_groups:
+        raise Http404
+    return render(
+        request,
+        "blog/series_detail.html",
+        {
+            "page": None,
+            "explicit_page_full_url": request.build_absolute_uri(),
+            "series_group": series_groups[0],
+        },
+    )
 
 
 def _escape_tag_value(value):

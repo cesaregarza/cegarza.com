@@ -3,6 +3,7 @@ from django.db import DatabaseError
 from wagtail.models import Site
 
 from blog.models import BlogIndexPage, ContentPage
+from blog.series import site_has_public_series
 from blog.site_urls import page_path_for_site
 
 
@@ -27,6 +28,7 @@ def site_navigation_values(site):
     navigation = {
         "site_home_url": "/",
         "site_about_url": "",
+        "site_series_url": "",
     }
     if not site or not getattr(site, "root_page_id", None):
         return navigation
@@ -56,6 +58,8 @@ def site_navigation_values(site):
     )
     if about_page:
         navigation["site_about_url"] = page_path_for_site(about_page, site) or ""
+    if site_has_public_series(site):
+        navigation["site_series_url"] = "/series/"
     return navigation
 
 
