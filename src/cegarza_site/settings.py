@@ -1,6 +1,4 @@
-"""
-Django settings for splattopblog project.
-"""
+"""Django settings for the cegarza.com site."""
 
 import os
 from pathlib import Path
@@ -134,7 +132,7 @@ MIDDLEWARE = [
     "blog.middleware.SiteAwareRedirectMiddleware",
 ]
 
-ROOT_URLCONF = "splattopblog.urls"
+ROOT_URLCONF = "cegarza_site.urls"
 
 TEMPLATES = [
     {
@@ -153,7 +151,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "splattopblog.wsgi.application"
+WSGI_APPLICATION = "cegarza_site.wsgi.application"
 
 
 # Database
@@ -166,7 +164,7 @@ def parse_database_url(database_url: str) -> dict:
 
     config: dict[str, object] = {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": (parsed.path or "").lstrip("/") or "splattopblog",
+        "NAME": (parsed.path or "").lstrip("/") or "cegarzablog",
         "USER": parsed.username or "",
         "PASSWORD": parsed.password or "",
         "HOST": parsed.hostname or "",
@@ -197,7 +195,7 @@ elif sql_host:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": get_env("SQL_DATABASE", "DB_NAME", default="splattopblog"),
+            "NAME": get_env("SQL_DATABASE", "DB_NAME", default="cegarzablog"),
             "USER": get_env("SQL_USER", "DB_USER", default="postgres"),
             "PASSWORD": get_env("SQL_PASSWORD", "DB_PASSWORD", default=""),
             "HOST": sql_host or "localhost",
@@ -293,12 +291,12 @@ else:
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Wagtail settings
-SITE_NAME = get_env("SITE_NAME", "WAGTAIL_SITE_NAME", default="SplatTop Blog")
+SITE_NAME = get_env("SITE_NAME", "WAGTAIL_SITE_NAME", default="cegarza.com")
 SITE_DESCRIPTION = get_env(
     "SITE_DESCRIPTION",
-    default="SplatTop blog posts and analysis.",
+    default="Thoughts, stories and ideas.",
 )
-SITE_AUTHOR = get_env("SITE_AUTHOR", "SITE_AUTHOR_NAME", default="SplatTop")
+SITE_AUTHOR = get_env("SITE_AUTHOR", "SITE_AUTHOR_NAME", default="Cesar Garza")
 BLOG_TAGS_ENABLED = get_env_bool("BLOG_TAGS_ENABLED", default=False)
 WAGTAIL_SITE_NAME = SITE_NAME
 WAGTAILADMIN_BASE_URL = get_env(

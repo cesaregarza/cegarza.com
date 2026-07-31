@@ -348,6 +348,64 @@ class GhostImageImport(models.Model):
         return self.ghost_path
 
 
+class WagtailPageImport(models.Model):
+    """Maps one namespaced Wagtail source page to its destination page."""
+
+    source_namespace = models.CharField(max_length=128)
+    source_page_id = models.PositiveBigIntegerField()
+    page = models.OneToOneField(
+        "blog.BlogPage",
+        on_delete=models.PROTECT,
+        related_name="wagtail_import",
+    )
+    source_live_sha256 = models.CharField(max_length=64)
+    source_draft_sha256 = models.CharField(max_length=64, blank=True)
+    source_first_published_at = models.DateTimeField()
+    source_last_published_at = models.DateTimeField()
+    target_live_sha256 = models.CharField(max_length=64)
+    target_draft_sha256 = models.CharField(max_length=64, blank=True)
+    imported_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["source_namespace", "source_page_id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["source_namespace", "source_page_id"],
+                name="blog_unique_wagtail_page_source",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.source_namespace}:{self.source_page_id}"
+
+
+class WagtailImageImport(models.Model):
+    """Maps one namespaced Wagtail source image to a verified destination image."""
+
+    source_namespace = models.CharField(max_length=128)
+    source_image_id = models.PositiveBigIntegerField()
+    image = models.ForeignKey(
+        "wagtailimages.Image",
+        on_delete=models.PROTECT,
+        related_name="+",
+    )
+    source_sha256 = models.CharField(max_length=64)
+    stored_sha256 = models.CharField(max_length=64)
+    imported_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["source_namespace", "source_image_id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["source_namespace", "source_image_id"],
+                name="blog_unique_wagtail_image_source",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.source_namespace}:{self.source_image_id}"
+
+
 class BlogIndexPage(Page):
     """Blog listing page."""
 

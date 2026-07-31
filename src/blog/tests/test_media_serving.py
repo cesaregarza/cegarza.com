@@ -5,7 +5,7 @@ from django.http import Http404
 from django.test import RequestFactory, SimpleTestCase, override_settings
 from django.urls import Resolver404, resolve
 
-from splattopblog.urls import _local_media_urlpatterns, serve_local_media
+from cegarza_site.urls import _local_media_urlpatterns, serve_local_media
 
 
 class LocalMediaServingTest(SimpleTestCase):

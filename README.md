@@ -1,162 +1,126 @@
-# SplatTop Blog
+# cegarza.com
 
-Wagtail-powered blog for blog.splat.top.
+The Wagtail-powered personal site for [cegarza.com](https://cegarza.com).
 
-## Quick Start (Local Development)
+## Local development
+
+Install dependencies, configure a local environment, migrate, and start the
+development server:
 
 ```bash
-# Install uv if you haven't already
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Setup project (installs deps, creates .env, runs migrations)
 make setup
-
-# Create admin account
 make superuser
-
-# Run development server
 make dev
-
-# Visit the site
-# macOS:
-open http://localhost:8000
-open http://localhost:8000/admin
-# Linux:
-xdg-open http://localhost:8000
-xdg-open http://localhost:8000/admin
 ```
 
-## Available Commands
+The public site is available at `http://localhost:8000`; Wagtail admin is at
+`http://localhost:8000/admin/`.
+
+Useful commands:
 
 ```bash
-make help          # Show all commands
-make install       # Install dependencies
-make dev           # Run dev server
-make migrate       # Run migrations
-make makemigrations # Create migrations
-make lint          # Run linting (ruff)
-make format        # Format code (ruff)
-make shell         # Django shell
-make superuser     # Create admin user
-make static        # Collect static files
-make clean         # Clean cache files
+make help
+make lint
+make format
+make migrate
+make makemigrations
+make shell
+make static
 ```
 
-## Docker Development
-
-If you prefer Docker (uses PostgreSQL):
+Docker-based development uses PostgreSQL:
 
 ```bash
-make docker-up     # Start containers
-make docker-logs   # View logs
-make docker-down   # Stop containers
+make docker-up
+make docker-logs
+make docker-down
 ```
 
-## Project Structure
+## Project layout
 
-```
-SplatTopBlog/
-├── src/                      # Application code
-│   ├── blog/                 # Blog app (posts, index)
-│   ├── home/                 # Home page app
-│   ├── splattopblog/         # Django settings
-│   ├── templates/            # Base templates
-│   ├── static/               # Static assets
-│   ├── media/                # User uploads
-│   └── manage.py
-├── docs/                     # Documentation
-│   └── SplatTop_style_bible.md
-├── .github/workflows/        # CI/CD
-├── Dockerfile
-├── docker-compose.yml
-├── pyproject.toml
-├── uv.lock
-└── Makefile
+```text
+src/
+├── blog/          # Wagtail pages, imports, feeds, and tests
+├── cegarza_site/  # Django settings, URLs, and WSGI
+├── home/          # Directory page
+├── static/        # Versioned site assets and applets
+└── templates/     # Shared public templates
+ops/               # Explicit operator-run migration tools
+docs/              # Design and operational documentation
 ```
 
-## Environment Variables
+## Configuration
 
-Copy `.env.example` to `.env`:
+Copy `.env.example` to `.env`. Production requires a strong
+`DJANGO_SECRET_KEY`. `DATABASE_URL` supports PostgreSQL SSL parameters;
+without it, local development uses SQLite.
 
-```bash
-cp .env.example .env
-```
+The public defaults are:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DEBUG` | Enable debug mode | `true` |
-| `DJANGO_SECRET_KEY` | Django secret key | (required in prod) |
-| `ALLOWED_HOSTS` | Comma-separated hosts | `localhost,127.0.0.1` |
-| `CSRF_TRUSTED_ORIGINS` | Comma-separated trusted origins | `http://localhost:8000` |
-| `DATABASE_URL` | PostgreSQL connection string; supports `sslmode` and `sslrootcert` options | (empty = SQLite) |
-| `USE_SPACES` | Use DO Spaces/S3 for media storage | `false` |
-| `SITE_NAME` | Public site/feed name | `SplatTop Blog` |
-| `SITE_DESCRIPTION` | Public metadata/feed description | `SplatTop blog posts and analysis.` |
-| `SITE_AUTHOR` | Default public author name | `SplatTop` |
-| `WAGTAILADMIN_BASE_URL` | Canonical admin URL | `http://localhost:8000` |
-| `ALLOWED_EMBED_HOSTS` | Exact HTTPS hosts allowed in sandboxed imported iframes | `cesaregarza.github.io` |
-| `CSP_ENFORCE` | Enforce CSP (otherwise report-only) | `false` |
-
-**Note:** When `DATABASE_URL` is not set, the app uses SQLite, which is perfect for local development.
-
-In non-debug mode, the app now defaults to stricter security behavior (SSL redirect, secure cookies, HSTS, etc.) and fails fast if a weak or missing `DJANGO_SECRET_KEY` is detected.
+| Variable | Default |
+| --- | --- |
+| `SITE_NAME` | `cegarza.com` |
+| `SITE_DESCRIPTION` | `Thoughts, stories and ideas.` |
+| `SITE_AUTHOR` | `Cesar Garza` |
+| `WAGTAILADMIN_BASE_URL` | `http://localhost:8000` |
 
 ## Ghost import
 
-The importer accepts only the purpose-built, pruned migration JSON and a
-media-only tar archive containing regular image files under `content/images/`.
-It never extracts the archive. Strict inline PNG fallbacks inside SVG
-`<image>` nodes are decoded, canonically re-encoded, deduplicated, and stored
-under opaque local media names; raw data URLs and SVG `foreignObject` HTML are
-not published.
+The existing `import_ghost` command accepts a purpose-built JSON export and a
+bounded media archive. Always validate first:
 
 ```bash
 python src/manage.py import_ghost \
-  /imports/cegarza-import.json \
-  /imports/cegarza-import-media.tar.gz \
+  /imports/export.json \
+  /imports/media.tar.gz \
   --hostname preview.cegarza.com \
-  --site-name "Bringing Down The Gauss" \
-  --site-description "Thoughts, stories and ideas." \
-  --site-author "Cesar Garza" \
+  --dry-run
+```
+
+An identical real import is idempotent. Imported media uses deterministic
+names and is byte-verified before reuse.
+
+## Wagtail-to-Wagtail port
+
+`ops/export_wagtail_bundle.py` is a read-only, version-compatible exporter for
+small PostgreSQL-backed Wagtail sites. It reads through a repeatable-read,
+read-only transaction and emits a credential-free, mode-0600 archive
+containing published page snapshots, the latest distinct draft, restriction
+type, and checksummed original images. It deliberately excludes restriction
+passwords.
+
+Record the compressed archive SHA-256 outside the repository. On the
+destination, validate and then import the exact same pinned archive:
+
+```bash
+python src/manage.py import_wagtail_bundle /imports/site.tar.gz \
+  --hostname dev.cegarza.com \
+  --source-namespace source-primary \
+  --bundle-sha256 "$BUNDLE_SHA256" \
   --dry-run
 
-python src/manage.py import_ghost \
-  /imports/cegarza-import.json \
-  /imports/cegarza-import-media.tar.gz \
-  --hostname preview.cegarza.com \
-  --site-name "Bringing Down The Gauss" \
-  --site-description "Thoughts, stories and ideas." \
-  --site-author "Cesar Garza"
+python src/manage.py import_wagtail_bundle /imports/site.tar.gz \
+  --hostname dev.cegarza.com \
+  --source-namespace source-primary \
+  --bundle-sha256 "$BUNDLE_SHA256"
 ```
 
-Run the dry run first. An identical repeated real run leaves the same Ghost
-identities and revisions unchanged without creating duplicate pages, authors,
-tags, or images. The identity flags shown above pin the existing Ghost
-publication branding; when omitted, the importer derives the title and
-description from the validated Ghost settings and the fallback author from the
-sole imported author. Real imports serialize on the Wagtail tree-root database
-row before media writes, and Spaces object overwrite is disabled, so concurrent
-workers cannot overwrite or delete another import's media. If a storage or
-database commit acknowledgement is lost, deterministic media is preserved; an
-identical retry byte-verifies and reconciles either committed rows or a
-mapping-less canonical object.
+The importer uses namespaced page/image mappings, fails on unrelated slug
+collisions, deterministic media collisions, publication-timestamp drift, or
+destination editorial drift. Dry-run validates rewritten Wagtail revisions
+without writing destination rows or media. The real import preserves live
+versus draft state, keeps restricted pages fail-closed, and removes newly
+written media if the database transaction rolls back. A repeated identical
+import must report all pages and images unchanged.
 
-After preview acceptance, add the apex hostname as an explicit alias of the
-existing preview site:
+Restriction passwords may be transferred only through the dedicated
+non-interactive stdin command. Never put them in an archive, file, log, shell
+argument, or commit.
 
-```bash
-python src/manage.py activate_cegarza_hostname
-```
+## Release
 
-The command requires exactly one `preview.cegarza.com:443` site rooted at a
-blog index. It safely does nothing when the matching `cegarza.com:443` alias
-already exists, copies the preview site's compatible permanent redirects,
-rejects conflicting site or redirect records, and never changes the default
-Wagtail site.
-
-## Production Deployment
-
-Push to `main` triggers the CI/CD pipeline:
-1. Builds Docker image → DigitalOcean Container Registry
-2. Creates PR to update Helm values in GarzAICluster
-3. ArgoCD syncs deployment to Kubernetes
+A merge to `main` builds and publishes
+`registry.digitalocean.com/sendouq/cegarza-blog`, creates a GitHub release, and
+opens a narrowly scoped GitOps activation PR for
+`helm/cegarza-blog/values-cegarza.yaml`. Argo CD deployment remains an explicit
+reviewed GitOps action.

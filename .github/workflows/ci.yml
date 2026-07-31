@@ -39,8 +39,11 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen --python 3.12
 
+      - name: Check canonical identity
+        run: uv run python ops/check_canonical_brand.py
+
       - name: Ruff lint
-        run: uv run ruff check src
+        run: uv run ruff check .
 
       - name: Django system check
         working-directory: src
