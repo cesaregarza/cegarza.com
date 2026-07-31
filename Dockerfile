@@ -63,4 +63,4 @@ USER wagtail
 EXPOSE 8000
 
 # Run with gunicorn
-CMD ["/app/.venv/bin/gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "4", "splattopblog.wsgi:application"]
+CMD ["/app/.venv/bin/gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "4", "cegarza_site.wsgi:application"]

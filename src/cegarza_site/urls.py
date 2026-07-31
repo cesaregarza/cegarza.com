@@ -1,6 +1,4 @@
-"""
-URL configuration for splattopblog project.
-"""
+"""URL configuration for the cegarza.com site."""
 
 import re
 from pathlib import Path, PurePosixPath

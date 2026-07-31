@@ -30,7 +30,7 @@ jobs:
             - Potential bugs or issues
             - Django/Wagtail conventions
             - Security concerns
-            - Template and styling consistency with the SplatTop style bible
+            - Template and styling consistency with the cegarza.com style guide
 
             Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
 

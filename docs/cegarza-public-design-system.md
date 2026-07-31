@@ -1,4 +1,4 @@
-# SplatTop Blog public design system
+# cegarza.com public design system
 
 The public blog uses the **Console + series** direction: one flat page surface,
 lowercase monospace chrome, Archivo headings, and structural hairlines. Content

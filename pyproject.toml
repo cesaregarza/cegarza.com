@@ -1,7 +1,7 @@
 [project]
-name = "splattop-blog"
+name = "cegarza-com"
 version = "1.0.0"
-description = "SplatTop Blog - Wagtail CMS blog for the SplatTop platform"
+description = "The Wagtail-powered cegarza.com personal site"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -34,6 +34,7 @@ dev-dependencies = [
     "ipython>=8.0",
     "pytest>=8.0",
     "pytest-django>=4.8",
+    "ruamel.yaml>=0.18.6,<0.19",
     "ruff>=0.6.4",
 ]
 
@@ -50,4 +51,4 @@ select = ["E", "F", "I"]
 extend-ignore = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["blog", "home", "splattopblog"]
+known-first-party = ["blog", "cegarza_site", "home"]

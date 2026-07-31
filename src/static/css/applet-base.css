@@ -25,7 +25,7 @@ html.is-embedded body {
 }
 
 /* Embedded mode keeps scrolling active, hides scrollbar chrome until interaction,
-   and uses SplatTop theming when visible. */
+   and uses the site theme when visible. */
 html.is-embedded {
   height: auto;
   min-height: 0;

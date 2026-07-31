@@ -1,4 +1,4 @@
-name: Build and Deploy Blog
+name: Build and Publish cegarza.com
 
 on:
   workflow_dispatch:
@@ -27,12 +27,12 @@ concurrency:
 
 env:
   REGISTRY: registry.digitalocean.com
-  IMAGE_NAME: sendouq/splattop-blog
+  IMAGE_NAME: sendouq/cegarza-blog
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: SplatTop
+    environment: cegarza.com
     permissions:
       contents: read
       id-token: write
@@ -53,14 +53,14 @@ jobs:
         with:
           broker-url: https://credentials.garz.ai
           audience: https://credentials.garz.ai/v1
-          capability: digitalocean-k8s-deploy
+          capability: digitalocean-registry-write
 
       - name: Log in to DigitalOcean Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ fromJson(steps.broker.outputs.secrets-json).DIGITALOCEAN_ACCESS_TOKEN }}
-          password: ${{ fromJson(steps.broker.outputs.secrets-json).DIGITALOCEAN_ACCESS_TOKEN }}
+          username: ${{ fromJson(steps.broker.outputs.secrets-json).DIGITALOCEAN_REGISTRY_TOKEN }}
+          password: ${{ fromJson(steps.broker.outputs.secrets-json).DIGITALOCEAN_REGISTRY_TOKEN }}
 
       - name: Read .version
         id: semver
@@ -150,11 +150,16 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: SplatTop
+    environment: cegarza.com
     permissions:
       contents: read
       id-token: write
     steps:
+      - name: Checkout source repository
+        uses: actions/checkout@v4
+        with:
+          path: source-repo
+
       - name: Fetch deployment credentials
         id: broker
         uses: cesaregarza/.github/actions/fetch-broker-credentials@a1d2fb4a6b288066574b1ac53074ac62e920a07f
@@ -179,34 +184,15 @@ jobs:
           IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
           IMAGE_DIGEST: ${{ needs.build.outputs.image_digest }}
         run: |
-          cd config-repo
+          python3 source-repo/ops/update_cegarza_deployment.py \
+            config-repo/helm/cegarza-blog/values-cegarza.yaml \
+            --tag "$IMAGE_TAG" \
+            --digest "$IMAGE_DIGEST"
 
-          # Update values-prod.yaml with new image tag
-          python3 << 'EOF'
-          import os
-          from ruamel.yaml import YAML
-
-          yaml = YAML()
-          yaml.preserve_quotes = True
-
-          values_file = "helm/splattop-blog/values-prod.yaml"
-          tag = os.environ["IMAGE_TAG"]
-
-          with open(values_file, "r") as f:
-              values = yaml.load(f)
-
-          # Update the image tag
-          if "blog" not in values:
-              values["blog"] = {}
-          if "image" not in values["blog"]:
-              values["blog"]["image"] = {}
-          values["blog"]["image"]["tag"] = tag
-
-          with open(values_file, "w") as f:
-              yaml.dump(values, f)
-
-          print(f"Updated {values_file} with tag: {tag}")
-          EOF
+          test "$(git -C config-repo diff --name-only | wc -l)" -eq 1
+          test "$(git -C config-repo diff --name-only)" = \
+            "helm/cegarza-blog/values-cegarza.yaml"
+          git -C config-repo diff --check
 
       - name: Create Pull Request
         env:
@@ -215,23 +201,25 @@ jobs:
         run: |
           cd config-repo
 
-          BRANCH="bot/blog-update-${GITHUB_RUN_ID}"
+          BRANCH="bot/cegarza-blog-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
 
-          git config user.name "splattop-bot"
-          git config user.email "sre+bot@splattop.dev"
+          git config user.name "cegarza-bot"
+          git config user.email "sre+bot@cegarza.com"
           git checkout -b "$BRANCH"
-          git add helm/splattop-blog/values-prod.yaml
-          git commit -m "chore(blog): update image tag to ${IMAGE_TAG}"
+          git add helm/cegarza-blog/values-cegarza.yaml
+          git commit -m "chore(cegarza-blog): deploy ${IMAGE_TAG}"
           git push --set-upstream origin "$BRANCH"
 
           gh pr create \
             --base main \
             --head "$BRANCH" \
-            --title "[bot] Update splattop-blog image to ${IMAGE_TAG}" \
-            --body "Automated update from SplatTopBlog repository.
+            --title "[bot] Deploy cegarza-blog ${IMAGE_TAG}" \
+            --body "Automated immutable release activation from cegarza.com.
 
           **Source commit:** ${{ github.repository }}@${{ github.sha }}
           **Image tag:** ${IMAGE_TAG}
+          **Image digest:** ${{ needs.build.outputs.image_digest }}
 
-          This PR was created automatically by the CI/CD pipeline." \
-            || echo "Pull request already exists; continuing."
+          This PR updates only the dedicated cegarza-blog values overlay.
+          The one-time Deployment replacement is enabled only when the old
+          immutable selector is still present."

@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from django.conf import settings
 
-from splattopblog.settings import parse_database_url
+from cegarza_site.settings import parse_database_url
 
 
 class DatabaseUrlParsingTest(TestCase):
