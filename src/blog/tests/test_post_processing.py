@@ -1,13 +1,42 @@
 import unittest
 
+from django.test import SimpleTestCase
+
 from blog.post_processing import (
     HeadingSlugger,
     PostProcessor,
     build_toc_hierarchy,
     collect_glossary_terms,
     format_minutes,
+    html_has_math,
     inject_collapsible_readtimes,
+    render_blog_body,
 )
+
+
+class TestMathDetection(SimpleTestCase):
+    def test_html_has_math_delimiters(self):
+        self.assertTrue(html_has_math(r"text \(x\) more"))
+        self.assertTrue(html_has_math("block $$x$$ here"))
+        self.assertTrue(html_has_math(r"display \[x\] here"))
+        self.assertTrue(html_has_math("[latex]x[/latex]"))
+        self.assertFalse(html_has_math("plain prose with no math"))
+        self.assertFalse(html_has_math(""))
+
+    def test_render_blog_body_reports_inline_math(self):
+        body = [("markdown", r"Here is \(x^2\) inline.")]
+        self.assertTrue(render_blog_body(body)["math_present"])
+
+    def test_render_blog_body_reports_display_math(self):
+        body = [("markdown", "A display block $$E = mc^2$$ here.")]
+        self.assertTrue(render_blog_body(body)["math_present"])
+
+    def test_render_blog_body_plain_prose_has_no_math(self):
+        body = [("markdown", "Just some ordinary prose with no delimiters.")]
+        self.assertFalse(render_blog_body(body)["math_present"])
+
+    def test_render_blog_body_empty_has_no_math(self):
+        self.assertFalse(render_blog_body([])["math_present"])
 
 
 class TestHeadingSlugger(unittest.TestCase):

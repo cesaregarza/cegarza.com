@@ -1,0 +1,14 @@
+{% comment %}
+Person structured data for the About page. Standalone, well-formed script.
+name/url/sameAs come from the context processor (SITE_AUTHOR / person_url /
+SITE_SAMEAS). LinkedIn is intentionally omitted from the default sameAs list;
+add it later via the SITE_SAMEAS env setting.
+{% endcomment %}<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "{{ person_name|default:site_author|escapejs }}",
+    "url": "{{ person_url|default:site_url|escapejs }}",
+    "sameAs": [{% for link in person_same_as %}"{{ link|escapejs }}"{% if not forloop.last %}, {% endif %}{% endfor %}]
+}
+</script>

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from urllib.parse import urljoin
 
+from django.conf import settings
 from django.contrib.syndication.views import Feed
 from django.http import Http404
 from django.urls import reverse
@@ -28,8 +29,24 @@ class BlogFeed(Feed):
     def title(self, site):
         return site_identity_values(site)["site_name"]
 
+    def _index(self, site):
+        if not site:
+            return None
+        root_page = site.root_page.specific
+        if isinstance(root_page, BlogIndexPage):
+            return root_page
+        return (
+            BlogIndexPage.objects.descendant_of(site.root_page)
+            .live()
+            .public()
+            .order_by("path")
+            .first()
+        )
+
     def description(self, site):
-        return site_identity_values(site)["site_description"]
+        index = self._index(site)
+        intro = (getattr(index, "intro", "") or "").strip()
+        return intro or settings.SITE_ROLE_DESCRIPTION
 
     def get_object(self, request):
         return Site.find_for_request(request)
@@ -37,17 +54,7 @@ class BlogFeed(Feed):
     def link(self, site):
         if not site:
             return "/"
-        root_page = site.root_page.specific
-        if isinstance(root_page, BlogIndexPage):
-            index = root_page
-        else:
-            index = (
-                BlogIndexPage.objects.descendant_of(site.root_page)
-                .live()
-                .public()
-                .order_by("path")
-                .first()
-            )
+        index = self._index(site)
         return page_full_url_for_site(index, site) if index else site.root_url
 
     def items(self, site):
@@ -82,7 +89,7 @@ class BlogAtomFeed(BlogFeed):
     feed_type = Atom1Feed
 
     def subtitle(self, site):
-        return site_identity_values(site)["site_description"]
+        return self.description(site)
 
 
 @dataclass(frozen=True, slots=True)

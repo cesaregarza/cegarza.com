@@ -1,0 +1,6 @@
+{% comment %}
+Reusable publisher Organization *object fragment* (NOT a <script> tag).
+Callers interpolate it into a publisher slot, e.g.:
+    "publisher": {% include "blog/includes/jsonld_publisher.html" %}
+so the publisher name + logo live in exactly one place.
+{% endcomment %}{"@type": "Organization", "name": "{{ site_name|escapejs }}", "url": "{{ site_url|escapejs }}"{% if publisher_logo_url %}, "logo": {"@type": "ImageObject", "url": "{{ publisher_logo_url|escapejs }}"}{% endif %}}

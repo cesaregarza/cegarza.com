@@ -298,6 +298,27 @@ SITE_DESCRIPTION = get_env(
     default="Thoughts, stories and ideas.",
 )
 SITE_AUTHOR = get_env("SITE_AUTHOR", "SITE_AUTHOR_NAME", default="Cesar Garza")
+# Name-first descriptor used in page titles and as the meta-description fallback
+# on the home/writing pages. Kept distinct from SITE_DESCRIPTION (the tagline,
+# still used for RSS alternate-link titles) so the tagline is never used as a
+# meta description.
+SITE_ROLE = get_env("SITE_ROLE", default="ML / Data / Infra Engineer")
+SITE_ROLE_DESCRIPTION = get_env(
+    "SITE_ROLE_DESCRIPTION",
+    default=(
+        "Cesar Garza — ML, data, and infrastructure engineer. "
+        "Essays and open-notebook notes on models and systems."
+    ),
+)
+# Canonical absolute origin for structured-data (Person/Organization/breadcrumb)
+# URLs. WAGTAILADMIN_BASE_URL defaults to localhost, so it is unsuitable here.
+SITE_URL = get_env("SITE_URL", default="https://cegarza.com")
+# Person.sameAs list. LinkedIn can be appended later via env when known.
+SITE_SAMEAS = get_env_list("SITE_SAMEAS", "https://github.com/cesaregarza")
+# Absolute (or static-relative) logo URL for Organization.logo; blank omits it.
+SITE_PUBLISHER_LOGO = get_env("SITE_PUBLISHER_LOGO", default="")
+# Optional override for Person.url (defaults to the About page URL or SITE_URL).
+SITE_PERSON_URL = get_env("SITE_PERSON_URL", default="")
 BLOG_TAGS_ENABLED = get_env_bool("BLOG_TAGS_ENABLED", default=False)
 WAGTAIL_SITE_NAME = SITE_NAME
 WAGTAILADMIN_BASE_URL = get_env(

@@ -8,6 +8,8 @@
     <meta name="theme-color" content="#0b1020">
     <meta name="color-scheme" content="dark light">
     <link rel="icon" href="{% static 'icons/favicon.svg' %}" type="image/svg+xml">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'icons/apple-touch-icon.png' %}">
+    <link rel="manifest" href="{% url 'web_manifest' %}">
     <link
         rel="preload"
         href="{% static 'fonts/archivo-700-latin.woff2' %}"
@@ -29,20 +31,20 @@
         type="font/woff2"
         crossorigin
     >
-    <title>{% block title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %}{% endblock %} | {{ site_name }}</title>
-    <meta name="description" content="{% block description %}{{ page.search_description|default:site_description }}{% endblock %}">
+    <title>{% block title %}{% firstof page.seo_title page.title site_name as page_title %}{{ page_title }}{% if page_title != site_name %} | {{ site_name }}{% endif %}{% endblock %}</title>
+    <meta name="description" content="{% block description %}{{ page.search_description|default:'' }}{% endblock %}">
     <meta name="author" content="{{ site_author }}">
     <meta name="robots" content="{% block robots_meta %}index,follow{% endblock %}">
     <meta property="og:site_name" content="{{ site_name }}">
     <meta property="og:title" content="{% block og_title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %}{% endblock %}">
-    <meta property="og:description" content="{% block og_description %}{{ page.search_description|default:site_description }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{{ page.search_description|default:'' }}{% endblock %}">
     {% if current_page_url %}
         <meta property="og:url" content="{{ current_page_url }}">
     {% endif %}
     <meta property="og:type" content="{% block og_type %}website{% endblock %}">
     <meta name="twitter:card" content="{% block twitter_card %}summary_large_image{% endblock %}">
     <meta name="twitter:title" content="{% block twitter_title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %}{% endblock %}">
-    <meta name="twitter:description" content="{% block twitter_description %}{{ page.search_description|default:site_description }}{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}{{ page.search_description|default:'' }}{% endblock %}">
     {% block social_image_meta %}
         {% if page and page.specific.social_image %}
             {% image page.specific.social_image fill-1200x630 as social_img %}
@@ -58,6 +60,12 @@
             <meta property="og:image:height" content="{{ social_img.height }}">
             <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{{ social_img.url }}">
             <meta name="twitter:image:alt" content="{{ page.seo_title|default:page.title }}">
+        {% else %}
+            <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'img/og-default.png' %}">
+            <meta property="og:image:width" content="1200">
+            <meta property="og:image:height" content="630">
+            <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'img/og-default.png' %}">
+            <meta name="twitter:image:alt" content="{{ site_name }} — {{ site_author }}">
         {% endif %}
     {% endblock %}
 
@@ -72,12 +80,14 @@
     <link rel="alternate" type="application/rss+xml" title="{{ site_name }} RSS" href="/feed/">
     <link rel="alternate" type="application/atom+xml" title="{{ site_name }} Atom" href="/feed/atom/">
     <link rel="stylesheet" href="{% static 'css/site.css' %}">
+    {% if math_present %}
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.16.25/dist/katex.min.css"
         integrity="sha384-WcoG4HRXMzYzfCgiyfrySxx90XSl2rxY5mnVY5TwtWE6KLrArNKn0T/mOgNL0Mmi"
         crossorigin="anonymous"
     >
+    {% endif %}
     {% block extra_head %}{% endblock %}
     {% block extra_css %}{% endblock %}
 </head>
@@ -138,6 +148,7 @@
         </footer>
     </div>
 
+    {% if math_present %}
     <script
         defer
         src="https://cdn.jsdelivr.net/npm/katex@0.16.25/dist/katex.min.js"
@@ -151,6 +162,7 @@
         crossorigin="anonymous"
     ></script>
     <script defer src="{% static 'js/katex-init.js' %}"></script>
+    {% endif %}
     {% block extra_js %}{% endblock %}
     {% wagtailuserbar %}
 </body>

@@ -4,6 +4,8 @@ from pathlib import Path
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.test import TestCase, override_settings
+from wagtail.images.models import Image
+from wagtail.images.tests.utils import get_test_image_file
 from wagtail.models import Site
 
 from blog.models import BlogIndexPage, BlogPage, ContentPage
@@ -82,7 +84,11 @@ class PublicDesignTemplateTest(TestCase):
         self.assertContains(response, 'class="site-nav"')
         self.assertContains(response, 'class="index-hero"')
         self.assertContains(response, 'class="index-stats"')
-        self.assertContains(response, 'class="lead-post"')
+        # The fixture lead post has no featured image, so it renders as a clean
+        # text-only lead (CES-675) rather than an empty media placeholder.
+        self.assertContains(response, "lead-post lead-post--text-only")
+        self.assertNotContains(response, "lead-post__media--empty")
+        self.assertNotContains(response, "lead graphic")
         self.assertContains(response, 'id="applets"')
         self.assertContains(response, "3 interactive notes")
         self.assertContains(response, "A representative technical field note")
@@ -126,6 +132,93 @@ class PublicDesignTemplateTest(TestCase):
         self.assertIn("There is nothing at this address.", not_found)
         self.assertIn('class="error-band"', server_error)
         self.assertIn("The server could not complete that request.", server_error)
+
+        # 404 CTA points at the writing listing (CES-679 item 3)...
+        self.assertIn("browse writing →", not_found)
+        self.assertIn("/writing/", not_found)
+        # ...but 500 keeps the shared default so the block override did not leak.
+        self.assertIn("back to posts →", server_error)
+        self.assertNotIn("browse writing →", server_error)
+
+    def test_katex_is_gated_to_math_posts_only(self):
+        math_post = BlogPage(
+            title="A note with equations",
+            slug="math-note",
+            date=date(2026, 7, 31),
+            body=[("markdown", "A display block $$E = mc^2$$ inline.")],
+        )
+        self.index.add_child(instance=math_post)
+        math_post.save_revision().publish()
+
+        math_html = self.get_page("/math-note/").content.decode("utf-8")
+        self.assertIn("katex.min.css", math_html)
+        self.assertIn("katex.min.js", math_html)
+
+        # The non-math post must not pull KaTeX.
+        plain_html = self.get_page("/representative-note/").content.decode("utf-8")
+        self.assertNotIn("katex.min.css", plain_html)
+
+        # And KaTeX must not load site-wide (home + writing listing).
+        self.assertNotIn("katex", self.get_page("/").content.decode("utf-8"))
+        self.assertNotIn("katex", self.get_page("/writing/").content.decode("utf-8"))
+
+    def test_head_wires_apple_touch_icon_and_manifest(self):
+        html = self.get_page("/").content.decode("utf-8")
+        self.assertIn('rel="apple-touch-icon"', html)
+        self.assertIn('sizes="180x180"', html)
+        self.assertIn('rel="manifest"', html)
+
+    def test_web_manifest_route_serves_json(self):
+        response = self.client.get(
+            "/site.webmanifest", secure=True, HTTP_HOST="design.test"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/manifest+json")
+        body = response.content.decode("utf-8")
+        self.assertIn('"192x192"', body)
+        self.assertIn('"512x512"', body)
+        self.assertIn("#0b1020", body)
+        self.assertIn('"purpose": "maskable"', body)
+
+    def test_body_image_renders_srcset_and_preserves_alt(self):
+        image = Image.objects.create(
+            title="Body figure title",
+            file=get_test_image_file(filename="body-figure.png"),
+        )
+        post = BlogPage(
+            title="Post with a body image",
+            slug="body-image-post",
+            date=date(2026, 7, 26),
+            body=[("image", {"image": image, "caption": ""})],
+        )
+        self.index.add_child(instance=post)
+        post.save_revision().publish()
+
+        html = self.get_page("/body-image-post/").content.decode("utf-8")
+        self.assertIn('class="post-image"', html)
+        self.assertIn("srcset=", html)
+        self.assertIn("sizes=", html)
+        # Alt falls back to the image title when there is no caption.
+        self.assertIn('alt="Body figure title"', html)
+
+    def test_lead_post_with_image_is_not_text_only(self):
+        image = Image.objects.create(
+            title="Lead hero",
+            file=get_test_image_file(filename="lead-hero.png"),
+        )
+        lead = BlogPage(
+            title="Illustrated lead",
+            slug="illustrated-lead",
+            date=date(2026, 8, 1),
+            featured_image=image,
+            body=[("heading", "Heading")],
+        )
+        self.index.add_child(instance=lead)
+        lead.save_revision().publish()
+
+        html = self.get_page("/writing/").content.decode("utf-8")
+        self.assertIn("lead-post__media", html)
+        self.assertNotIn("lead-post--text-only", html)
 
     def test_css_declares_tokens_focus_and_reduced_motion_contracts(self):
         css_path = Path(settings.BASE_DIR) / "static" / "css" / "site.css"

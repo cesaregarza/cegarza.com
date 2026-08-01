@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% load wagtailcore_tags %}
 
+{% block extra_head %}
+    {% if page.slug == "about" %}
+        {% include "blog/includes/jsonld_person.html" %}
+    {% endif %}
+{% endblock %}
+
 {% block body_class %}page--content{% endblock %}
 
 {% block content %}

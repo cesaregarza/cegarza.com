@@ -1,0 +1,18 @@
+{% comment %}
+BreadcrumbList (Home > Writing > <post>). Emitted as a SEPARATE second ld+json
+script AFTER the BlogPosting one so the ghost-import contract (first block's
+"url") is preserved. Absolute item URLs come from the context processor
+(breadcrumb_home_url / breadcrumb_writing_url) and current_page_url.
+{% endcomment %}{% if current_page_url %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": "{{ breadcrumb_home_url|escapejs }}"},
+        {"@type": "ListItem", "position": 2, "name": "Writing", "item": "{{ breadcrumb_writing_url|escapejs }}"},
+        {"@type": "ListItem", "position": 3, "name": "{{ page.title|escapejs }}", "item": "{{ current_page_url|escapejs }}"}
+    ]
+}
+</script>
+{% endif %}
