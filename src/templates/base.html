@@ -38,9 +38,9 @@
     <meta property="og:site_name" content="{{ site_name }}">
     <meta property="og:title" content="{% block og_title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %}{% endblock %}">
     <meta property="og:description" content="{% block og_description %}{{ page.search_description|default:'' }}{% endblock %}">
-    {% if current_page_url %}
+    {% block og_url %}{% if current_page_url %}
         <meta property="og:url" content="{{ current_page_url }}">
-    {% endif %}
+    {% endif %}{% endblock %}
     <meta property="og:type" content="{% block og_type %}website{% endblock %}">
     <meta name="twitter:card" content="{% block twitter_card %}summary_large_image{% endblock %}">
     <meta name="twitter:title" content="{% block twitter_title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %}{% endblock %}">

@@ -16,6 +16,14 @@
     {% endif %}
 {% endblock %}
 
+{% block og_url %}
+    {% if page_obj and page_obj.number > 1 %}
+        <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    {% else %}
+        <meta property="og:url" content="{{ listing_full_url }}">
+    {% endif %}
+{% endblock %}
+
 {% block extra_head %}
     {% if is_paginated %}
         {% if page_obj.has_previous %}

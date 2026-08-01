@@ -213,6 +213,19 @@ class MetadataTemplateTest(TestCase):
             "https://meta.test/representative-note/",
         )
 
+    def test_writing_og_url_equals_listing_canonical(self):
+        # The routable index's page canonical is "/" (signpost route), but the
+        # listing serves at /writing/ — og:url must follow the listing canonical.
+        html = self.get("/writing/")
+        self.assertEqual(
+            _meta(html, "property", "og:url"),
+            _canonical(html),
+        )
+        self.assertEqual(
+            _meta(html, "property", "og:url"),
+            "https://meta.test/writing/",
+        )
+
 
 class SiteIdentityContextTest(TestCase):
     @override_settings(
