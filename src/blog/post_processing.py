@@ -414,6 +414,46 @@ def build_toc_hierarchy(toc_items):
     return items
 
 
+# KaTeX auto-render delimiters (mirrors static/js/katex-init.js). Used to decide
+# whether a page needs the KaTeX bundle so it is not loaded site-wide.
+_MATH_DELIMITERS = ("\\(", "$$", "\\[", "[latex]")
+
+
+def text_has_math(text):
+    """True when a string contains a KaTeX math delimiter."""
+    if not text:
+        return False
+    return any(delimiter in text for delimiter in _MATH_DELIMITERS)
+
+
+# Backwards-compatible alias for callers that pass rendered HTML.
+html_has_math = text_has_math
+
+
+def body_has_math(body):
+    """True when a StreamField body's *source* contains KaTeX math delimiters.
+
+    Detection runs against the raw block source (StreamField ``raw_data``) rather
+    than rendered HTML, because Markdown consumes ``\\(``/``\\)`` escapes before
+    they reach the DOM: an author who writes inline ``\\(x\\)`` in a markdown block
+    must still get KaTeX loaded. Used by the cache-hit render path, where the
+    ``math_present`` flag is not a persisted column and must be recomputed
+    without re-rendering.
+    """
+    if not body:
+        return False
+    raw_data = getattr(body, "raw_data", None)
+    if raw_data is None:
+        raw_data = body
+    for entry in raw_data:
+        value = entry.get("value") if isinstance(entry, dict) else entry
+        if isinstance(value, dict):
+            value = " ".join(str(part) for part in value.values())
+        if text_has_math(str(value)):
+            return True
+    return False
+
+
 def render_blog_body(body):
     if not body:
         return {
@@ -422,12 +462,14 @@ def render_blog_body(body):
             "toc_crumb": "",
             "readtime_main": format_minutes(0),
             "readtime_deep": format_minutes(0),
+            "math_present": False,
         }
     glossary_terms, auto_link = collect_glossary_terms(body)
     blocks_html = []
     for block in body:
         blocks_html.append(render_to_string("blog/blocks/render_block.html", {"block": block}))
     raw_html = "\n".join(blocks_html)
+    math_present = body_has_math(body)
 
     processor = PostProcessor(glossary_terms, auto_link)
     processor.feed(raw_html)
@@ -441,4 +483,5 @@ def render_blog_body(body):
         "toc_crumb": toc_items[0]["text"] if toc_items else "",
         "readtime_main": format_minutes(processor.total_main_words),
         "readtime_deep": format_minutes(processor.total_deep_words),
+        "math_present": math_present,
     }

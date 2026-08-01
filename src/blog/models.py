@@ -18,7 +18,7 @@ from wagtail.signals import page_published
 from wagtail.snippets.models import register_snippet
 from wagtailmarkdown.blocks import MarkdownBlock
 
-from .post_processing import format_minutes, render_blog_body
+from .post_processing import body_has_math, format_minutes, render_blog_body
 from .site_urls import page_path_for_site
 
 BLOG_BODY_RENDER_VERSION = "console-v1"
@@ -684,12 +684,16 @@ class BlogPage(GhostContentFields, Page):
 
     def _render_context_from_cache(self):
         fallback_readtime = format_minutes(0)
+        # math_present is not a persisted column, so recompute it from the raw
+        # body here; otherwise the flag would silently drop to False on cached
+        # pages and KaTeX would not load on a math post after its first render.
         return {
             "body_html": self.body_rendered_html,
             "toc_items": self.body_rendered_toc_items or [],
             "toc_crumb": self.body_rendered_toc_crumb or "",
             "readtime_main": self.body_rendered_readtime_main or fallback_readtime,
             "readtime_deep": self.body_rendered_readtime_deep or fallback_readtime,
+            "math_present": body_has_math(self.body),
         }
 
     def _persist_render_cache(self, body_cache_key, rendered):

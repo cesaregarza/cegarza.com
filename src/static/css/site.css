@@ -624,6 +624,10 @@ h6 {
     border-bottom: 1px solid var(--rule);
 }
 
+.lead-post--text-only {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .lead-post__media {
     display: flex;
     min-height: 250px;
@@ -639,14 +643,6 @@ h6 {
     width: 100%;
     height: 250px;
     object-fit: cover;
-}
-
-.lead-post__media--empty {
-    background: var(--color-surface-2);
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: lowercase;
 }
 
 .lead-post__body {

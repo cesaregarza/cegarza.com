@@ -1,11 +1,26 @@
 {% extends "base.html" %}
 {% load static wagtailcore_tags wagtailimages_tags %}
 
+{% block title %}{{ site_writing_title }}{% endblock %}
+{% block og_title %}{{ site_writing_title }}{% endblock %}
+{% block twitter_title %}{{ site_writing_title }}{% endblock %}
+{% block description %}{{ page.intro|default:site_role_description }}{% endblock %}
+{% block og_description %}{{ page.intro|default:site_role_description }}{% endblock %}
+{% block twitter_description %}{{ page.intro|default:site_role_description }}{% endblock %}
+
 {% block canonical_link %}
     {% if page_obj and page_obj.number > 1 %}
         <link rel="canonical" href="{{ request.build_absolute_uri }}">
     {% else %}
         <link rel="canonical" href="{{ listing_full_url }}">
+    {% endif %}
+{% endblock %}
+
+{% block og_url %}
+    {% if page_obj and page_obj.number > 1 %}
+        <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    {% else %}
+        <meta property="og:url" content="{{ listing_full_url }}">
     {% endif %}
 {% endblock %}
 
@@ -52,7 +67,7 @@
 <section class="writing-index" id="latest-writing" aria-label="Posts">
 {% if posts %}
     {% with lead_post=posts.0 %}
-        <article class="lead-post" id="latest-post">
+        <article class="lead-post{% if not lead_post.featured_image %} lead-post--text-only{% endif %}" id="latest-post">
             {% if lead_post.featured_image %}
                 <a class="lead-post__media" href="{% pageurl lead_post %}" tabindex="-1" aria-hidden="true">
                     {% image lead_post.featured_image fill-760x500 as lead_img %}
@@ -64,10 +79,6 @@
                         fetchpriority="high"
                     >
                 </a>
-            {% else %}
-                <div class="lead-post__media lead-post__media--empty" aria-hidden="true">
-                    <span>lead graphic</span>
-                </div>
             {% endif %}
             <div class="lead-post__body">
                 <p class="post-meta">

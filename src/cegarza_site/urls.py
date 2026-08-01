@@ -85,6 +85,7 @@ def _local_media_urlpatterns():
 
 urlpatterns = [
     path("robots.txt", robots_txt, name="robots-txt"),
+    path("site.webmanifest", blog_views.web_manifest, name="web_manifest"),
     path("django-admin/", admin.site.urls),
     path("admin/", include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),

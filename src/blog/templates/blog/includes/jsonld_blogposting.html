@@ -1,0 +1,34 @@
+{% load wagtailimages_tags %}{% comment %}
+BlogPosting structured data. MUST be the FIRST ld+json script on a post and MUST
+keep a top-level "url" == current_page_url (contract in
+test_ghost_import.py, which reads the first ld+json block's "url"). Do NOT wrap
+this in an @graph. The image expression mirrors base.html's og:image builder
+(same social_image->featured_image precedence and fill-1200x630 rendition) so the
+structured-data image equals the social card.
+{% endcomment %}{% if current_page_url %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "{{ page.seo_title|default:page.title|escapejs }}",
+    "description": "{{ page.abstract|default:page.search_description|default:''|striptags|escapejs }}",
+    "url": "{{ current_page_url|escapejs }}",
+    "author": {
+        "@type": "Person",
+        "name": "{{ page.primary_author.name|default:site_author|escapejs }}",
+        "url": "{{ person_url|default:site_url|escapejs }}",
+        "sameAs": [{% for link in person_same_as %}"{{ link|escapejs }}"{% if not forloop.last %}, {% endif %}{% endfor %}]
+    },
+    "publisher": {% include "blog/includes/jsonld_publisher.html" %}{% if page.ghost_published_at %},
+    "datePublished": "{{ page.ghost_published_at|date:'c' }}"{% elif page.date %},
+    "datePublished": "{{ page.date|date:'c' }}"{% endif %}{% if page.ghost_updated_at %},
+    "dateModified": "{{ page.ghost_updated_at|date:'c' }}"{% elif page.last_published_at %},
+    "dateModified": "{{ page.last_published_at|date:'c' }}"{% endif %}{% if page.tags.exists %},
+    "keywords": [{% for tag in page.tags.all %}"{{ tag.name|escapejs }}"{% if not forloop.last %}, {% endif %}{% endfor %}]{% endif %}{% if page.social_image %},
+    {% image page.social_image fill-1200x630 as schema_img %}
+    "image": "{{ request.scheme }}://{{ request.get_host }}{{ schema_img.url }}"{% elif page.featured_image %},
+    {% image page.featured_image fill-1200x630 as schema_img %}
+    "image": "{{ request.scheme }}://{{ request.get_host }}{{ schema_img.url }}"{% endif %}
+}
+</script>
+{% endif %}

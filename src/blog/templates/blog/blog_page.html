@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% load static wagtailcore_tags wagtailimages_tags wagtailmarkdown %}
 
-{% block description %}{{ page.abstract|default:page.search_description|default:site_description }}{% endblock %}
-{% block og_description %}{{ page.abstract|default:page.search_description|default:site_description }}{% endblock %}
-{% block twitter_description %}{{ page.abstract|default:page.search_description|default:site_description }}{% endblock %}
+{% block description %}{{ page.abstract|default:page.search_description|default:'' }}{% endblock %}
+{% block og_description %}{{ page.abstract|default:page.search_description|default:'' }}{% endblock %}
+{% block twitter_description %}{{ page.abstract|default:page.search_description|default:'' }}{% endblock %}
 {% block og_type %}article{% endblock %}
 {% block extra_head %}
     {% if page.ghost_published_at %}
@@ -20,34 +20,8 @@
     {% for tag in page.tags.all %}
         <meta property="article:tag" content="{{ tag.name }}">
     {% endfor %}
-    {% if current_page_url %}
-        <script type="application/ld+json">
-            {
-                "@context": "https://schema.org",
-                "@type": "BlogPosting",
-                "headline": "{{ page.seo_title|default:page.title|escapejs }}",
-                "description": "{{ page.abstract|default:page.search_description|default:''|striptags|escapejs }}",
-                "url": "{{ current_page_url|escapejs }}",
-                "author": {
-                    "@type": "Person",
-                    "name": "{{ page.primary_author.name|default:site_author|escapejs }}"
-                },
-                "publisher": {
-                    "@type": "Organization",
-                    "name": "{{ site_name|escapejs }}"
-                }{% if page.ghost_published_at %},
-                "datePublished": "{{ page.ghost_published_at|date:'c' }}"{% elif page.date %},
-                "datePublished": "{{ page.date|date:'c' }}"{% endif %}{% if page.ghost_updated_at %},
-                "dateModified": "{{ page.ghost_updated_at|date:'c' }}"{% elif page.last_published_at %},
-                "dateModified": "{{ page.last_published_at|date:'c' }}"{% endif %}{% if page.tags.exists %},
-                "keywords": [{% for tag in page.tags.all %}"{{ tag.name|escapejs }}"{% if not forloop.last %}, {% endif %}{% endfor %}]{% endif %}{% if page.social_image %},
-                {% image page.social_image fill-1200x630 as schema_img %}
-                "image": "{{ request.scheme }}://{{ request.get_host }}{{ schema_img.url }}"{% elif page.featured_image %},
-                {% image page.featured_image fill-1200x630 as schema_img %}
-                "image": "{{ request.scheme }}://{{ request.get_host }}{{ schema_img.url }}"{% endif %}
-            }
-        </script>
-    {% endif %}
+    {% include "blog/includes/jsonld_blogposting.html" %}
+    {% include "blog/includes/jsonld_breadcrumbs.html" %}
 {% endblock %}
 
 {% block body_class %}page--article{% endblock %}
@@ -191,16 +165,8 @@
 
     <article class="post">
         {% if page.featured_image %}
-            {% image page.featured_image fill-1200x560 as img %}
             <figure class="featured-image">
-                <img
-                    src="{{ img.url }}"
-                    alt="{{ img.alt|default:page.title }}"
-                    width="{{ img.width }}"
-                    height="{{ img.height }}"
-                    decoding="async"
-                    fetchpriority="high"
-                >
+                {% srcset_image page.featured_image fill-{760x355,1000x467,1240x580} sizes="(max-width: 700px) 100vw, 1120px" alt=page.featured_image.alt|default:page.title decoding="async" fetchpriority="high" %}
             </figure>
         {% endif %}
 

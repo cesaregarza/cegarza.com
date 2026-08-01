@@ -20,6 +20,15 @@ def custom_500(request):
     return render(request, "500.html", status=500)
 
 
+def web_manifest(request):
+    """Serve the PWA manifest so icon URLs go through {% static %} (hash-safe)."""
+    return render(
+        request,
+        "site.webmanifest",
+        content_type="application/manifest+json",
+    )
+
+
 def series_index(request):
     site, blog_index = request_site_and_index(request)
     if not site or not blog_index:

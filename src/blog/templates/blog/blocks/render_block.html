@@ -12,16 +12,8 @@
     <h2>{{ block.value }}</h2>
 {% elif block.block_type == 'image' %}
     {% with caption=block.value.caption %}
-        {% image block.value.image width-1200 as img %}
         <figure class="post-image">
-            <img
-                src="{{ img.url }}"
-                alt="{{ caption|default:block.value.image.title }}"
-                width="{{ img.width }}"
-                height="{{ img.height }}"
-                loading="lazy"
-                decoding="async"
-            >
+            {% srcset_image block.value.image width-{480,760,1000,1240} sizes="(max-width: 700px) 100vw, 62ch" alt=caption|default:block.value.image.title loading="lazy" decoding="async" %}
             {% if caption %}
                 <figcaption>{{ caption }}</figcaption>
             {% endif %}

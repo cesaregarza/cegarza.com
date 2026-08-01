@@ -29,7 +29,7 @@
         <section class="error-state" aria-labelledby="error-heading">
             <h1 id="error-heading">{% block error_heading %}{% endblock %}</h1>
             <p>{% block error_message %}{% endblock %}</p>
-            <a href="/">back to posts →</a>
+            {% block error_cta %}<a href="/">back to posts →</a>{% endblock %}
         </section>
     </main>
 </body>
