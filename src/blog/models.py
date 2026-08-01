@@ -10,6 +10,7 @@ from modelcluster.fields import ParentalKey, ParentalManyToManyField
 from modelcluster.models import ClusterableModel
 from wagtail import blocks
 from wagtail.admin.panels import FieldPanel, HelpPanel, InlinePanel
+from wagtail.contrib.routable_page.models import RoutablePageMixin, path
 from wagtail.fields import StreamField
 from wagtail.images.blocks import ImageChooserBlock
 from wagtail.models import Orderable, Page, Site
@@ -406,8 +407,14 @@ class WagtailImageImport(models.Model):
         return f"{self.source_namespace}:{self.source_image_id}"
 
 
-class BlogIndexPage(Page):
-    """Blog listing page."""
+class BlogIndexPage(RoutablePageMixin, Page):
+    """Signpost landing at ``/`` with the chronological listing at ``/writing/``.
+
+    The page stays the Wagtail site root, so posts remain its direct children
+    and keep their flat ``/<slug>/`` URLs. The default route renders the
+    signpost; the ``writing/`` sub-route renders the reverse-chronological
+    listing that previously lived at the root.
+    """
 
     intro = models.TextField(blank=True)
     default_author_name = models.CharField(
@@ -415,18 +422,60 @@ class BlogIndexPage(Page):
         blank=True,
         help_text="Default author name for site metadata and unattributed posts.",
     )
+    signpost_kicker = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text="Short mono label above the name (e.g. 'software engineer · ml systems').",
+    )
+    signpost_heading = models.CharField(
+        max_length=160,
+        blank=True,
+        help_text="Landing headline. Falls back to the site name when blank.",
+    )
+    signpost_intro = models.TextField(
+        blank=True,
+        help_text="Short landing paragraph. Falls back to the site description when blank.",
+    )
 
     content_panels = Page.content_panels + [
         FieldPanel("intro"),
         FieldPanel("default_author_name"),
+        FieldPanel("signpost_kicker"),
+        FieldPanel("signpost_heading"),
+        FieldPanel("signpost_intro"),
+        InlinePanel("signpost_links", label="Signpost links"),
     ]
 
     subpage_types = ["blog.BlogPage", "blog.ContentPage"]
     parent_page_types = ["home.HomePage"]
 
-    def get_context(self, request):
-        context = super().get_context(request)
-        posts = BlogPage.objects.child_of(self).live().public().order_by("-first_published_at")
+    def _published_posts(self):
+        return (
+            BlogPage.objects.child_of(self)
+            .live()
+            .public()
+            .order_by("-first_published_at")
+        )
+
+    def is_root_for_site(self, site):
+        """True when this index is the Wagtail Site root (flat ``/<slug>/`` posts)."""
+        return bool(site and site.root_page_id == self.id)
+
+    def listing_url(self, request=None):
+        """URL of the chronological listing.
+
+        When the index is the site root it hosts the signpost at ``/`` and the
+        listing at ``/writing/``. When it is nested under a HomePage the listing
+        stays at the index's own path.
+        """
+        site = Site.find_for_request(request) if request else None
+        base = (page_path_for_site(self, site) if site else self.get_url()) or "/"
+        if self.is_root_for_site(site):
+            return base.rstrip("/") + "/writing/"
+        return base
+
+    def _listing_context(self, request):
+        posts = self._published_posts()
         paginator = Paginator(posts, 9)
         page_number = request.GET.get("page")
         page_obj = paginator.get_page(page_number)
@@ -440,24 +489,84 @@ class BlogIndexPage(Page):
         }
         current_posts = list(page_obj.object_list)
         lead_post_id = current_posts[0].pk if current_posts else None
-        context["posts"] = page_obj
-        context["page_obj"] = page_obj
-        context["paginator"] = paginator
-        context["is_paginated"] = paginator.num_pages > 1
-        context["series_groups"] = all_series_groups if page_obj.number == 1 else []
-        context["series_count"] = len(all_series_groups)
-        context["standalone_posts"] = [
-            post
-            for post in current_posts
-            if post.pk != lead_post_id and post.pk not in series_post_ids
-        ]
-        context["applets"] = APPLET_CATALOG
-        context["applet_count"] = len(APPLET_CATALOG)
-        context["blog_tags_enabled"] = getattr(settings, "BLOG_TAGS_ENABLED", False)
-        return context
+        return {
+            "posts": page_obj,
+            "page_obj": page_obj,
+            "listing_full_url": request.build_absolute_uri(self.listing_url(request)),
+            "paginator": paginator,
+            "is_paginated": paginator.num_pages > 1,
+            "series_groups": all_series_groups if page_obj.number == 1 else [],
+            "series_count": len(all_series_groups),
+            "standalone_posts": [
+                post
+                for post in current_posts
+                if post.pk != lead_post_id and post.pk not in series_post_ids
+            ],
+            "applets": APPLET_CATALOG,
+            "applet_count": len(APPLET_CATALOG),
+            "blog_tags_enabled": getattr(settings, "BLOG_TAGS_ENABLED", False),
+        }
+
+    def _signpost_context(self, request):
+        posts = self._published_posts()
+        return {
+            "signpost_links": list(self.signpost_links.all()),
+            "featured_posts": list(posts.filter(is_featured=True)[:4]),
+            "recent_posts": list(posts[:4]),
+            "writing_url": self.listing_url(request),
+            "applets": APPLET_CATALOG,
+            "applet_count": len(APPLET_CATALOG),
+        }
+
+    @path("")
+    def index_route(self, request):
+        # Root index: signpost landing. Nested index: the listing at its own URL.
+        site = Site.find_for_request(request)
+        if self.is_root_for_site(site):
+            return self.render(
+                request,
+                template="blog/home_signpost.html",
+                context_overrides=self._signpost_context(request),
+            )
+        return self.render(
+            request,
+            context_overrides=self._listing_context(request),
+        )
+
+    @path("writing/")
+    def writing_route(self, request):
+        return self.render(
+            request,
+            context_overrides=self._listing_context(request),
+        )
 
     class Meta:
         verbose_name = "Blog Index"
+
+
+class SignpostLink(Orderable):
+    """One curated link shown in the signpost directory on the landing page."""
+
+    page = ParentalKey(
+        "blog.BlogIndexPage",
+        on_delete=models.CASCADE,
+        related_name="signpost_links",
+    )
+    label = models.CharField(max_length=120)
+    url = models.CharField(
+        max_length=500,
+        help_text="Absolute URL (https://…) or a site-relative path (/about/).",
+    )
+    description = models.CharField(max_length=255, blank=True)
+
+    panels = [
+        FieldPanel("label"),
+        FieldPanel("url"),
+        FieldPanel("description"),
+    ]
+
+    def __str__(self):
+        return self.label
 
 
 class BlogPage(GhostContentFields, Page):
@@ -618,7 +727,11 @@ class BlogPage(GhostContentFields, Page):
         context["blog_tags_enabled"] = getattr(settings, "BLOG_TAGS_ENABLED", False)
         site = Site.find_for_request(request)
         if site:
-            context["blog_index_url"] = page_path_for_site(self.get_parent(), site)
+            index = self.get_parent().specific
+            if isinstance(index, BlogIndexPage):
+                context["blog_index_url"] = index.listing_url(request)
+            else:
+                context["blog_index_url"] = page_path_for_site(self.get_parent(), site)
 
         from .series import public_series_context_for_page
 

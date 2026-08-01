@@ -27,6 +27,7 @@ def site_identity_values(site):
 def site_navigation_values(site):
     navigation = {
         "site_home_url": "/",
+        "site_writing_url": "/writing/",
         "site_about_url": "",
         "site_series_url": "",
     }
@@ -49,6 +50,12 @@ def site_navigation_values(site):
         return navigation
 
     navigation["site_home_url"] = page_path_for_site(blog_index, site) or "/"
+    if blog_index.is_root_for_site(site):
+        navigation["site_writing_url"] = (
+            navigation["site_home_url"].rstrip("/") + "/writing/"
+        )
+    else:
+        navigation["site_writing_url"] = navigation["site_home_url"]
     about_page = (
         ContentPage.objects.child_of(blog_index)
         .live()

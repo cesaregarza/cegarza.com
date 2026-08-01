@@ -199,7 +199,7 @@ class OrderedSeriesTest(TestCase):
         self.assertContains(response, "Is primary")
 
     def test_hub_detail_and_index_use_only_live_public_parts(self):
-        index_response = self.get("/")
+        index_response = self.get("/writing/")
         hub_response = self.get("/series/")
         detail_response = self.get("/series/primary-sequence/")
 
@@ -315,7 +315,7 @@ class OrderedSeriesTest(TestCase):
             page__in=[self.part_one, self.part_two]
         ).delete()
 
-        response = self.get("/")
+        response = self.get("/writing/")
 
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'href="/series/"')
