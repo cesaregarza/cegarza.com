@@ -88,16 +88,15 @@
             <div class="container site-header__inner">
                 <a href="{{ site_home_url|default:'/' }}" class="site-title" aria-label="{{ site_name }} home">
                     <span class="site-title__primary">cegarza.com</span>
-                    <span class="site-title__secondary">/ writing</span>
                 </a>
                 <div class="site-header__right">
                     {% block primary_navigation %}
                         <nav class="site-nav" aria-label="Primary navigation">
                             <a
                                 class="site-nav__link"
-                                href="{{ site_home_url|default:'/' }}"
-                                {% if request.path == site_home_url %}aria-current="page"{% endif %}
-                            >posts</a>
+                                href="{{ site_writing_url|default:'/writing/' }}"
+                                {% if request.path|slice:":9" == "/writing/" %}aria-current="page"{% endif %}
+                            >writing</a>
                             {% if site_series_url %}
                                 <a
                                     class="site-nav__link"
@@ -105,7 +104,7 @@
                                     {% if request.path|slice:":8" == "/series/" %}aria-current="page"{% endif %}
                                 >series</a>
                             {% endif %}
-                            <a class="site-nav__link" href="{{ site_home_url|default:'/' }}#applets">applets</a>
+                            <a class="site-nav__link" href="{{ site_writing_url|default:'/writing/' }}#applets">applets</a>
                             <a class="site-nav__link" href="/feed/">rss</a>
                         </nav>
                     {% endblock %}

@@ -75,7 +75,7 @@ class PublicDesignTemplateTest(TestCase):
         return self.client.get(path, secure=True, HTTP_HOST="design.test")
 
     def test_index_composes_the_shared_editorial_system(self):
-        response = self.get_page("/")
+        response = self.get_page("/writing/")
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'class="skip-link"')

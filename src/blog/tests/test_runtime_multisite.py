@@ -143,55 +143,55 @@ class RuntimeMultisiteTest(TestCase):
             self.index.add_child(instance=post)
             post.save_revision().publish()
 
-        preview_first = self.get_for_host("/", "preview.cegarza.test")
-        preview_second = self.get_for_host("/?page=2", "preview.cegarza.test")
-        preview_third = self.get_for_host("/?page=3", "preview.cegarza.test")
-        apex_first = self.get_for_host("/", "cegarza.test")
-        apex_second = self.get_for_host("/?page=2", "cegarza.test")
-        apex_third = self.get_for_host("/?page=3", "cegarza.test")
+        preview_first = self.get_for_host("/writing/", "preview.cegarza.test")
+        preview_second = self.get_for_host("/writing/?page=2", "preview.cegarza.test")
+        preview_third = self.get_for_host("/writing/?page=3", "preview.cegarza.test")
+        apex_first = self.get_for_host("/writing/", "cegarza.test")
+        apex_second = self.get_for_host("/writing/?page=2", "cegarza.test")
+        apex_third = self.get_for_host("/writing/?page=3", "cegarza.test")
 
         self.assertContains(
             preview_first,
-            '<link rel="next" href="https://preview.cegarza.test/?page=2">',
+            '<link rel="next" href="https://preview.cegarza.test/writing/?page=2">',
             html=True,
         )
         self.assertContains(
             preview_second,
-            '<link rel="prev" href="https://preview.cegarza.test/">',
+            '<link rel="prev" href="https://preview.cegarza.test/writing/">',
             html=True,
         )
         self.assertContains(
             preview_second,
-            '<link rel="next" href="https://preview.cegarza.test/?page=3">',
+            '<link rel="next" href="https://preview.cegarza.test/writing/?page=3">',
             html=True,
         )
         self.assertContains(
             preview_third,
-            '<link rel="prev" href="https://preview.cegarza.test/?page=2">',
+            '<link rel="prev" href="https://preview.cegarza.test/writing/?page=2">',
             html=True,
         )
         self.assertContains(
             apex_first,
-            '<link rel="next" href="https://cegarza.test/?page=2">',
+            '<link rel="next" href="https://cegarza.test/writing/?page=2">',
             html=True,
         )
         self.assertContains(
             apex_second,
-            '<link rel="prev" href="https://cegarza.test/">',
+            '<link rel="prev" href="https://cegarza.test/writing/">',
             html=True,
         )
         self.assertContains(
             apex_second,
-            '<link rel="next" href="https://cegarza.test/?page=3">',
+            '<link rel="next" href="https://cegarza.test/writing/?page=3">',
             html=True,
         )
         self.assertContains(
             apex_third,
-            '<link rel="prev" href="https://cegarza.test/?page=2">',
+            '<link rel="prev" href="https://cegarza.test/writing/?page=2">',
             html=True,
         )
-        self.assertNotContains(preview_first, "https://cegarza.test/?page=2")
-        self.assertNotContains(apex_first, "https://preview.cegarza.test/?page=2")
+        self.assertNotContains(preview_first, "https://cegarza.test/writing/?page=2")
+        self.assertNotContains(apex_first, "https://preview.cegarza.test/writing/?page=2")
 
     def test_restricted_posts_are_absent_from_public_surfaces(self):
         restricted = BlogPage(

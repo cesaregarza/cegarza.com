@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static wagtailcore_tags %}
+
+{% block body_class %}page--directory{% endblock %}
+
+{% block content %}
+<header class="directory-hero" aria-labelledby="signpost-title">
+    <p class="eyebrow">{{ page.signpost_kicker|default:"cegarza.com" }}</p>
+    <h1 id="signpost-title">{{ page.signpost_heading|default:site_name }}</h1>
+    {% if page.signpost_intro or site_description %}
+        <p>{{ page.signpost_intro|default:site_description }}</p>
+    {% endif %}
+</header>
+
+<nav class="directory-grid" aria-label="Directory">
+    {% for link in signpost_links %}
+        <a class="directory-grid__item" href="{{ link.url }}">
+            <span class="directory-grid__index">{{ forloop.counter|stringformat:"02d" }}</span>
+            <strong>{{ link.label }}</strong>
+            <span>{{ link.description|default:"open →" }}</span>
+        </a>
+    {% empty %}
+        <a class="directory-grid__item" href="{{ writing_url }}">
+            <span class="directory-grid__index">01</span>
+            <strong>Writing</strong>
+            <span>essays &amp; notes →</span>
+        </a>
+        {% if site_about_url %}
+        <a class="directory-grid__item" href="{{ site_about_url }}">
+            <span class="directory-grid__index">02</span>
+            <strong>About</strong>
+            <span>who i am →</span>
+        </a>
+        {% endif %}
+        <a class="directory-grid__item" href="/feed/">
+            <span class="directory-grid__index">03</span>
+            <strong>RSS</strong>
+            <span>subscribe →</span>
+        </a>
+        <a class="directory-grid__item" href="https://github.com/cesaregarza">
+            <span class="directory-grid__index">04</span>
+            <strong>GitHub</strong>
+            <span>code →</span>
+        </a>
+    {% endfor %}
+</nav>
+
+{% if recent_posts %}
+<section class="signpost-writing" aria-labelledby="signpost-writing-title">
+    <header class="index-divider index-divider--heading">
+        <h2 id="signpost-writing-title">recent writing</h2>
+        <a href="{{ writing_url }}">all writing →</a>
+    </header>
+    <div class="post-grid">
+        {% for post in recent_posts %}
+            <article class="post-cell">
+                <p class="post-meta">
+                    {% if post.date %}
+                        <time datetime="{{ post.date|date:'Y-m-d' }}">{{ post.date|date:"Y-m-d" }}</time>
+                        <span aria-hidden="true">·</span>
+                    {% endif %}
+                    <span>{{ post.body_rendered_readtime_main|default:"— min" }}</span>
+                </p>
+                <h3><a href="{% pageurl post %}">{{ post.title }}</a></h3>
+                {% if post.abstract %}
+                    <p>{{ post.abstract }}</p>
+                {% elif post.search_description %}
+                    <p>{{ post.search_description }}</p>
+                {% endif %}
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

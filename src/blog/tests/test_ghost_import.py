@@ -856,7 +856,7 @@ class GhostImportTest(TestCase):
             "/synthetic-post-4.md",
             HTTP_HOST="synthetic.example",
         )
-        index = self.client.get("/", HTTP_HOST="synthetic.example")
+        index = self.client.get("/writing/", HTTP_HOST="synthetic.example")
         feed = self.client.get("/feed/", HTTP_HOST="synthetic.example")
         rss = self.client.get("/rss/", HTTP_HOST="synthetic.example", follow=True)
         sitemap = self.client.get("/sitemap.xml", HTTP_HOST="synthetic.example")
