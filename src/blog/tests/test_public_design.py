@@ -162,6 +162,22 @@ class PublicDesignTemplateTest(TestCase):
         self.assertNotIn("katex", self.get_page("/").content.decode("utf-8"))
         self.assertNotIn("katex", self.get_page("/writing/").content.decode("utf-8"))
 
+    def test_math_blog_checkbox_force_loads_katex(self):
+        # No math delimiters anywhere in the body — only the editor checkbox.
+        forced = BlogPage(
+            title="Forced math note",
+            slug="forced-math-note",
+            date=date(2026, 8, 1),
+            body=[("markdown", "No delimiters here, but the applet needs KaTeX.")],
+            force_math=True,
+        )
+        self.index.add_child(instance=forced)
+        forced.save_revision().publish()
+
+        html = self.get_page("/forced-math-note/").content.decode("utf-8")
+        self.assertIn("katex.min.css", html)
+        self.assertIn("katex.min.js", html)
+
     def test_head_wires_apple_touch_icon_and_manifest(self):
         html = self.get_page("/").content.decode("utf-8")
         self.assertIn('rel="apple-touch-icon"', html)
