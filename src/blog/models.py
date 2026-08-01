@@ -577,6 +577,15 @@ class BlogPage(GhostContentFields, Page):
         default=False,
         help_text="Feature this post in editorial selections.",
     )
+    force_math = models.BooleanField(
+        "Math blog?",
+        default=False,
+        help_text=(
+            "Force-load KaTeX math rendering on this post even when no math "
+            "delimiters are detected in the body. Leave unchecked to rely on "
+            "automatic detection."
+        ),
+    )
     featured_image = models.ForeignKey(
         "wagtailimages.Image",
         null=True,
@@ -650,6 +659,7 @@ class BlogPage(GhostContentFields, Page):
     content_panels = Page.content_panels + [
         FieldPanel("date"),
         FieldPanel("is_featured"),
+        FieldPanel("force_math"),
         FieldPanel("featured_image"),
         FieldPanel("authors"),
         FieldPanel("tags"),
@@ -728,6 +738,9 @@ class BlogPage(GhostContentFields, Page):
     def get_context(self, request):
         context = super().get_context(request)
         context.update(self.get_render_context(request=request))
+        # The editor's "Math blog?" checkbox force-loads KaTeX; automatic
+        # delimiter detection still applies when it is unchecked.
+        context["math_present"] = context.get("math_present", False) or self.force_math
         context["blog_tags_enabled"] = getattr(settings, "BLOG_TAGS_ENABLED", False)
         site = Site.find_for_request(request)
         if site:
