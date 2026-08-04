@@ -3,11 +3,13 @@
 }
 
 * { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; }
+html, body { min-height: 100%; margin: 0; }
 
 body {
   display: flex;
-  align-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  align-items: flex-start;
   justify-content: center;
   padding: 16px;
   background:
@@ -143,6 +145,7 @@ html.is-embedded .applet {
 
 .applet {
   width: min(var(--applet-max-width), 100%);
+  margin-block: auto;
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), var(--panel));
   border: 1px solid var(--edge);
   border-radius: 16px;
