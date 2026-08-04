@@ -256,6 +256,15 @@ class PublicDesignTemplateTest(TestCase):
         self.assertNotIn("background-image:", css)
         self.assertNotIn(".post-card:hover", css)
 
+    def test_applet_shell_centers_without_clipping_tall_content(self):
+        css_path = Path(settings.BASE_DIR) / "static" / "css" / "applet-base.css"
+        css = css_path.read_text(encoding="utf-8")
+
+        self.assertIn("html, body { min-height: 100%; margin: 0; }", css)
+        self.assertIn("align-items: flex-start;", css)
+        self.assertIn("margin-block: auto;", css)
+        self.assertNotIn("html, body { height: 100%;", css)
+
     def test_console_fonts_are_self_hosted(self):
         font_dir = Path(settings.BASE_DIR) / "static" / "fonts"
         expected_fonts = {
