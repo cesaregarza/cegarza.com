@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import json
 import os
 import re
@@ -6,6 +8,7 @@ from types import SimpleNamespace
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db.transaction import TransactionManagementError
 from django.http import HttpResponse
@@ -16,7 +19,7 @@ from wagtail.models import PageViewRestriction, Site
 from blog.context_processors import site_identity
 from blog.feeds import BlogFeed
 from blog.markdown_extensions.random_choice import RandomChoicePreprocessor
-from blog.middleware import FrontendSecurityHeadersMiddleware
+from blog.middleware import APPLET_INLINE_SCRIPT_HASHES, FrontendSecurityHeadersMiddleware
 from blog.models import (
     AppletEmbedBlock,
     BlogIndexPage,
@@ -221,6 +224,45 @@ class TestFrontendSecurityHeadersMiddleware(TestCase):
             response = middleware(request)
         self.assertIn("Content-Security-Policy", response)
         self.assertIn("upgrade-insecure-requests", response["Content-Security-Policy"])
+
+    def test_applet_csp_allows_only_pinned_inline_scripts(self):
+        with patch.dict(os.environ, {"CSP_ENFORCE": "true"}):
+            middleware = FrontendSecurityHeadersMiddleware(lambda request: HttpResponse("ok"))
+            request = RequestFactory().get("/static/applets/loser-winner.example.html")
+            response = middleware(request)
+
+        policy = response["Content-Security-Policy"]
+        script_directive = next(
+            directive.strip()
+            for directive in policy.split(";")
+            if directive.strip().startswith("script-src ")
+        )
+        for script_hash in APPLET_INLINE_SCRIPT_HASHES:
+            self.assertIn(f"'{script_hash}'", script_directive)
+        self.assertNotIn("'unsafe-inline'", script_directive)
+
+    def test_regular_page_csp_excludes_applet_script_hashes(self):
+        middleware = FrontendSecurityHeadersMiddleware(lambda request: HttpResponse("ok"))
+        response = middleware(RequestFactory().get("/writing/"))
+        policy = response["Content-Security-Policy-Report-Only"]
+
+        for script_hash in APPLET_INLINE_SCRIPT_HASHES:
+            self.assertNotIn(script_hash, policy)
+
+    def test_applet_hash_allowlist_matches_static_inline_scripts(self):
+        script_pattern = re.compile(
+            r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>",
+            re.IGNORECASE | re.DOTALL,
+        )
+        computed_hashes = set()
+        applet_dir = settings.BASE_DIR / "static" / "applets"
+        for applet_path in applet_dir.glob("*.html"):
+            for script in script_pattern.findall(applet_path.read_text(encoding="utf-8")):
+                digest = hashlib.sha256(script.encode("utf-8")).digest()
+                encoded = base64.b64encode(digest).decode("ascii")
+                computed_hashes.add(f"sha256-{encoded}")
+
+        self.assertEqual(computed_hashes, set(APPLET_INLINE_SCRIPT_HASHES))
 
 
 class TestBlogPageModelFields(TestCase):

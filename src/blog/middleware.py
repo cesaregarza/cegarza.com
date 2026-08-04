@@ -11,6 +11,12 @@ from wagtail.models import Site
 
 from blog.site_urls import page_full_url_for_site
 
+APPLET_INLINE_SCRIPT_HASHES = (
+    "sha256-ahjuAJ6kuYRzHlz7zYWvwxvFDKjnKHquGIEGzpuavXU=",
+    "sha256-2svO+pGuPmmPvv5RF/vvH4POgwfrKwYcFe8MN6mGEiU=",
+    "sha256-l6bkXz93BMcC3viToBnVBss7AXM1ZfPnkJ/cAHDYvV4=",
+)
+
 
 def _redirect_target_for_site(redirect, request, site):
     if redirect.redirect_page:
@@ -79,6 +85,9 @@ class FrontendSecurityHeadersMiddleware:
             return response
 
         csp_header = "Content-Security-Policy" if self.enforce_csp else "Content-Security-Policy-Report-Only"
+        script_sources = ["'self'", "https://cdn.jsdelivr.net"]
+        if self._is_applet_path(request.path):
+            script_sources.extend(f"'{script_hash}'" for script_hash in APPLET_INLINE_SCRIPT_HASHES)
         csp_directives = [
             "default-src 'self'",
             "base-uri 'self'",
@@ -87,7 +96,7 @@ class FrontendSecurityHeadersMiddleware:
             "img-src 'self' data: https:",
             "font-src 'self' data: https://cdn.jsdelivr.net",
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-            "script-src 'self' https://cdn.jsdelivr.net",
+            f"script-src {' '.join(script_sources)}",
             "connect-src 'self'",
             "form-action 'self'",
         ]
@@ -106,3 +115,7 @@ class FrontendSecurityHeadersMiddleware:
     @staticmethod
     def _is_admin_path(path):
         return path.startswith("/admin/") or path.startswith("/django-admin/")
+
+    @staticmethod
+    def _is_applet_path(path):
+        return path.startswith("/static/applets/")

@@ -232,6 +232,34 @@ class TestPostProcessorImages(unittest.TestCase):
         self.assertNotIn('loading="lazy"', output)
 
 
+class TestPostProcessorTables(unittest.TestCase):
+    def test_wraps_table_in_scrollable_region(self):
+        proc = PostProcessor({}, False)
+        proc.feed("<table><tbody><tr><td>Value</td></tr></tbody></table>")
+        proc.close()
+        output = "".join(proc.output)
+
+        self.assertIn(
+            '<div class="table-wrapper" role="region" '
+            'aria-label="Scrollable data table" tabindex="0"><table>',
+            output,
+        )
+        self.assertIn("</table></div>", output)
+
+    def test_does_not_double_wrap_existing_table_wrapper(self):
+        proc = PostProcessor({}, False)
+        proc.feed(
+            '<div class="table-wrapper"><table><tbody><tr><td>Value</td></tr></tbody></table></div>'
+        )
+        proc.close()
+        output = "".join(proc.output)
+
+        self.assertEqual(output.count('class="table-wrapper"'), 1)
+        self.assertIn('role="region"', output)
+        self.assertIn('aria-label="Scrollable data table"', output)
+        self.assertIn('tabindex="0"', output)
+
+
 class TestPostProcessorGlossary(unittest.TestCase):
     def test_manual_link(self):
         terms = {"api": {"term": "API", "definition": "Application Programming Interface"}}
