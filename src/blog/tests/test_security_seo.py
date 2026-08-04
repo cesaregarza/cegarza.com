@@ -264,6 +264,13 @@ class TestFrontendSecurityHeadersMiddleware(TestCase):
 
         self.assertEqual(computed_hashes, set(APPLET_INLINE_SCRIPT_HASHES))
 
+    def test_loser_winner_particle_animation_has_completion_fallback(self):
+        applet_path = settings.BASE_DIR / "static" / "applets" / "loser-winner.html"
+        source = applet_path.read_text(encoding="utf-8")
+
+        self.assertIn("fallbackId = setTimeout(finish, durationMs + 250);", source)
+        self.assertIn("if (frameId !== null) cancelAnimationFrame(frameId);", source)
+
 
 class TestBlogPageModelFields(TestCase):
     def test_blogpage_has_featured_image_field(self):

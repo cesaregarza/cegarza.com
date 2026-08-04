@@ -587,11 +587,24 @@
 
         function animateParticleAlongPath(pathEl, durationMs) {
           return new Promise((resolve) => {
+            let settled = false;
+            let frameId = null;
+            let fallbackId = null;
+
+            function finish() {
+              if (settled) return;
+              settled = true;
+              if (frameId !== null) cancelAnimationFrame(frameId);
+              if (fallbackId !== null) clearTimeout(fallbackId);
+              particle.style.opacity = "0";
+              resolve();
+            }
+
             const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
             if (reduce) {
               // In reduced-motion, just blink it quickly.
               particle.style.opacity = "0.9";
-              setTimeout(() => { particle.style.opacity = "0"; resolve(); }, 80);
+              fallbackId = setTimeout(finish, 80);
               return;
             }
 
@@ -599,19 +612,20 @@
             const start = performance.now();
 
             particle.style.opacity = "0.9";
+            // requestAnimationFrame may be throttled or suspended by the browser.
+            // Always settle so the action queue cannot freeze at influence flow.
+            fallbackId = setTimeout(finish, durationMs + 250);
 
             function tick(now) {
+              if (settled) return;
               const t = Math.min(1, (now - start) / durationMs);
               const p = pathEl.getPointAtLength(len * t);
               particle.setAttribute("cx", p.x.toFixed(2));
               particle.setAttribute("cy", p.y.toFixed(2));
-              if (t < 1) requestAnimationFrame(tick);
-              else {
-                particle.style.opacity = "0";
-                resolve();
-              }
+              if (t < 1) frameId = requestAnimationFrame(tick);
+              else finish();
             }
-            requestAnimationFrame(tick);
+            frameId = requestAnimationFrame(tick);
           });
         }
 
