@@ -104,6 +104,8 @@ class PostProcessor(HTMLParser):
         self._skip_stack = []
         self._details_stack = []
         self._summary_depth = 0
+        self._div_table_wrapper_stack = []
+        self._generated_table_wrapper_stack = []
         self._manual_pattern = re.compile(r"\[\[([^\]]+)\]\]")
         self._auto_pattern = self._build_auto_pattern()
         self._skip_tags = {
@@ -265,6 +267,22 @@ class PostProcessor(HTMLParser):
         if skip_tag:
             self._skip_depth += 1
         attrs = list(attrs)
+        if tag == "div":
+            class_attr = next((value or "" for key, value in attrs if key == "class"), "")
+            is_table_wrapper = "table-wrapper" in class_attr.split()
+            self._div_table_wrapper_stack.append(is_table_wrapper)
+            if is_table_wrapper:
+                self._ensure_attr(attrs, "role", "region")
+                self._ensure_attr(attrs, "aria-label", "Scrollable data table")
+                self._ensure_attr(attrs, "tabindex", "0")
+        if tag == "table":
+            needs_wrapper = not any(self._div_table_wrapper_stack)
+            self._generated_table_wrapper_stack.append(needs_wrapper)
+            if needs_wrapper:
+                self._write(
+                    '<div class="table-wrapper" role="region" '
+                    'aria-label="Scrollable data table" tabindex="0">'
+                )
         if tag == "img":
             self._ensure_attr(attrs, "loading", "lazy")
             self._ensure_attr(attrs, "decoding", "async")
@@ -314,6 +332,11 @@ class PostProcessor(HTMLParser):
                     self._skip_depth = max(0, self._skip_depth - 1)
             return
         self._write(f"</{tag}>")
+        if tag == "table" and self._generated_table_wrapper_stack:
+            if self._generated_table_wrapper_stack.pop():
+                self._write("</div>")
+        if tag == "div" and self._div_table_wrapper_stack:
+            self._div_table_wrapper_stack.pop()
         if tag == "summary" and self._summary_depth > 0:
             self._summary_depth -= 1
         if tag == "details" and self._details_stack:

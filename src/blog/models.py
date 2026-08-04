@@ -21,7 +21,7 @@ from wagtailmarkdown.blocks import MarkdownBlock
 from .post_processing import body_has_math, format_minutes, render_blog_body
 from .site_urls import page_path_for_site
 
-BLOG_BODY_RENDER_VERSION = "console-v1"
+BLOG_BODY_RENDER_VERSION = "console-v2"
 APPLET_CATALOG = (
     {
         "title": "Loser’s bracket, winner’s bias",
