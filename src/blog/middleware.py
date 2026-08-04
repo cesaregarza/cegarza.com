@@ -12,7 +12,7 @@ from wagtail.models import Site
 from blog.site_urls import page_full_url_for_site
 
 APPLET_INLINE_SCRIPT_HASHES = (
-    "sha256-ahjuAJ6kuYRzHlz7zYWvwxvFDKjnKHquGIEGzpuavXU=",
+    "sha256-KgQZ474UAS9j3zo8WxGbWj+4bP4f3T+lOUqfdTZMSJs=",
     "sha256-2svO+pGuPmmPvv5RF/vvH4POgwfrKwYcFe8MN6mGEiU=",
     "sha256-l6bkXz93BMcC3viToBnVBss7AXM1ZfPnkJ/cAHDYvV4=",
 )
