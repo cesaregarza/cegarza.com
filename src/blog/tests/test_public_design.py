@@ -256,14 +256,27 @@ class PublicDesignTemplateTest(TestCase):
         self.assertNotIn("background-image:", css)
         self.assertNotIn(".post-card:hover", css)
 
-    def test_applet_shell_centers_without_clipping_tall_content(self):
-        css_path = Path(settings.BASE_DIR) / "static" / "css" / "applet-base.css"
-        css = css_path.read_text(encoding="utf-8")
+    def test_applet_shell_supports_intrinsic_and_constrained_heights(self):
+        static_dir = Path(settings.BASE_DIR) / "static"
+        applet_css = (static_dir / "css" / "applet-base.css").read_text(encoding="utf-8")
+        site_css = (static_dir / "css" / "site.css").read_text(encoding="utf-8")
+        blog_js = (static_dir / "js" / "blog-post.js").read_text(encoding="utf-8")
 
-        self.assertIn("html, body { min-height: 100%; margin: 0; }", css)
-        self.assertIn("align-items: flex-start;", css)
-        self.assertIn("margin-block: auto;", css)
-        self.assertNotIn("html, body { height: 100%;", css)
+        self.assertIn("html, body { min-height: 100%; margin: 0; }", applet_css)
+        self.assertIn("align-items: flex-start;", applet_css)
+        self.assertIn("margin-block: auto;", applet_css)
+        self.assertNotIn("html, body { height: 100%;", applet_css)
+        self.assertIn("html.is-embedded.is-height-constrained body", applet_css)
+        self.assertIn("overflow-y: auto;", applet_css)
+        self.assertIn("scrollbar-gutter: auto;", applet_css)
+        self.assertNotIn("scrollbar-gutter: stable;", applet_css)
+        self.assertIn("height: var(--applet-frame-height, 240px);", site_css)
+        self.assertIn("min-height: 120px;", site_css)
+        self.assertNotIn("min-height: var(--applet-frame-height", site_css)
+        self.assertIn("measureEmbeddedContentHeight", blog_js)
+        self.assertIn('classList.toggle("is-height-constrained"', blog_js)
+        self.assertIn('frame.style.minHeight = "120px";', blog_js)
+        self.assertNotIn("html.scrollHeight", blog_js)
 
     def test_console_fonts_are_self_hosted(self):
         font_dir = Path(settings.BASE_DIR) / "static" / "fonts"

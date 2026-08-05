@@ -37,13 +37,22 @@ html.is-embedded {
 html.is-embedded body {
   height: auto;
   min-height: 0;
-  overflow-y: auto;
+  overflow-y: visible;
   overflow-x: hidden;
-  overscroll-behavior-y: contain;
   scrollbar-width: thin;
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
   -ms-overflow-style: none;
   scrollbar-color: transparent transparent;
+}
+
+html.is-embedded.is-height-constrained {
+  height: 100%;
+}
+
+html.is-embedded.is-height-constrained body {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 html.is-embedded::-webkit-scrollbar,
@@ -94,7 +103,7 @@ html.is-embedded body:focus-within::-webkit-scrollbar-thumb {
 /* Apply the same embedded scrollbar behavior to nested scroll containers. */
 html.is-embedded body * {
   scrollbar-width: thin;
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
   scrollbar-color: transparent transparent;
 }
 

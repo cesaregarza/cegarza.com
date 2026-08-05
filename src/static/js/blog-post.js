@@ -91,6 +91,26 @@
         doc.documentElement.classList.add("is-embedded");
       };
 
+      const measureEmbeddedContentHeight = (doc) => {
+        const body = doc.body;
+        if (!body) return 0;
+
+        const bodyRect = body.getBoundingClientRect();
+        const bodyStyle = doc.defaultView?.getComputedStyle(body);
+        const paddingBottom = Number.parseFloat(bodyStyle?.paddingBottom || "0") || 0;
+        const contentBottom = Array.from(body.children).reduce((bottom, child) => {
+          const rect = child.getBoundingClientRect();
+          const childStyle = doc.defaultView?.getComputedStyle(child);
+          const marginBottom = Number.parseFloat(childStyle?.marginBottom || "0") || 0;
+          return Math.max(bottom, rect.bottom - bodyRect.top + marginBottom);
+        }, 0);
+
+        // Root scrollHeight is never smaller than the iframe viewport, so using it
+        // here makes a large fallback height impossible to shrink. Body children
+        // describe the applet's intrinsic height even when the viewport is capped.
+        return Math.ceil(contentBottom || bodyRect.height);
+      };
+
       const queueResizeFrame = (frame) => {
         if (frame.dataset.appletResizeQueued === "true") return;
         frame.dataset.appletResizeQueued = "true";
@@ -108,13 +128,7 @@
           const html = doc.documentElement;
           const body = doc.body;
           if (!html || !body) return;
-          const measuredHeight = Math.max(
-            html.scrollHeight,
-            html.offsetHeight,
-            body.scrollHeight,
-            body.offsetHeight,
-            Math.ceil(body.getBoundingClientRect().height)
-          );
+          const measuredHeight = measureEmbeddedContentHeight(doc);
           if (!Number.isFinite(measuredHeight) || measuredHeight < 120) {
             return;
           }
@@ -122,15 +136,19 @@
           const rawMaxHeight = frame.getAttribute("data-applet-max-height");
           const parsedMaxHeight = rawMaxHeight ? Number.parseInt(rawMaxHeight, 10) : NaN;
           const hasMaxHeight = !useFullHeight && Number.isFinite(parsedMaxHeight) && parsedMaxHeight >= 120;
+          const isHeightConstrained = hasMaxHeight && measuredHeight > parsedMaxHeight;
           const targetHeight = hasMaxHeight
             ? Math.min(Math.ceil(measuredHeight), parsedMaxHeight)
             : Math.ceil(measuredHeight);
+          html.classList.toggle("is-height-constrained", isHeightConstrained);
+          frame.classList.toggle("is-height-constrained", isHeightConstrained);
           const previousHeight = Number.parseInt(frame.dataset.appletMeasuredHeight || "", 10);
           if (Number.isFinite(previousHeight) && Math.abs(previousHeight - targetHeight) < 2) {
             return;
           }
           frame.dataset.appletMeasuredHeight = `${targetHeight}`;
           frame.style.maxHeight = hasMaxHeight ? `${parsedMaxHeight}px` : "";
+          frame.style.minHeight = "120px";
           frame.style.height = `${targetHeight}px`;
         } catch (err) {
           // Cross-origin frame; keep CSS fallback height.
