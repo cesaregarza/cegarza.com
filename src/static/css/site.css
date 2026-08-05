@@ -2037,8 +2037,10 @@ h6 {
 
 .applet-frame,
 .post-content iframe[src^="/static/applets/"] {
+    display: block;
     width: 100%;
-    min-height: var(--applet-frame-height, 240px);
+    height: var(--applet-frame-height, 240px);
+    min-height: 120px;
     border: 0;
     background: var(--color-surface-sunk);
 }
