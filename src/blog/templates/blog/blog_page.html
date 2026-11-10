@@ -150,7 +150,11 @@
             {% endif %}
 
             <nav class="post-rail__actions" aria-label="Article actions">
-                <a href="{{ blog_index_url|default:site_home_url|default:'/' }}">&larr; Back to posts</a>
+                {% if essay_archive_url %}
+                    <a href="{{ essay_archive_url }}">&larr; Back to essays</a>
+                {% else %}
+                    <a href="{{ blog_index_url|default:site_home_url|default:'/' }}">&larr; Back to posts</a>
+                {% endif %}
                 <button type="button" data-share-action data-share-url="{{ current_page_url }}">share</button>
                 <button
                     type="button"

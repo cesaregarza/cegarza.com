@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+
+{% block title %}Essays — {{ site_author }}{% endblock %}
+{% block og_title %}Essays — {{ site_author }}{% endblock %}
+{% block twitter_title %}Essays — {{ site_author }}{% endblock %}
+{% block description %}{{ essays_description }}{% endblock %}
+{% block og_description %}{{ essays_description }}{% endblock %}
+{% block twitter_description %}{{ essays_description }}{% endblock %}
+
+{% block canonical_link %}
+    <link rel="canonical" href="{{ listing_full_url }}{% if page_obj.number > 1 %}?page={{ page_obj.number }}{% endif %}">
+{% endblock %}
+{% block og_url %}
+    <meta property="og:url" content="{{ listing_full_url }}{% if page_obj.number > 1 %}?page={{ page_obj.number }}{% endif %}">
+{% endblock %}
+
+{% block extra_head %}
+    {% if page_obj.has_previous %}
+        <link rel="prev" href="{{ listing_full_url }}{% if page_obj.previous_page_number > 1 %}?page={{ page_obj.previous_page_number }}{% endif %}">
+    {% endif %}
+    {% if page_obj.has_next %}
+        <link rel="next" href="{{ listing_full_url }}?page={{ page_obj.next_page_number }}">
+    {% endif %}
+{% endblock %}
+
+{% block body_class %}page--index{% endblock %}
+
+{% block content %}
+<header class="index-hero" aria-labelledby="essays-title">
+    <p class="eyebrow">essays · reflections</p>
+    <h1 id="essays-title">Essays</h1>
+    <p>{{ essays_description }}</p>
+</header>
+
+{% if posts %}
+    <div class="index-divider">
+        {{ paginator.count }} essay{{ paginator.count|pluralize }} · newest first
+    </div>
+    <section class="post-grid" aria-label="Essays">
+        {% for post in posts %}
+            <article class="post-cell">
+                <p class="post-meta">
+                    {% if post.date %}
+                        <time datetime="{{ post.date|date:'Y-m-d' }}">{{ post.date|date:"Y-m-d" }}</time>
+                        <span aria-hidden="true">·</span>
+                    {% endif %}
+                    <span>{{ post.body_rendered_readtime_main|default:"— min" }}</span>
+                </p>
+                <h2><a href="{% pageurl post %}">{{ post.title }}</a></h2>
+                {% if post.abstract %}
+                    <p>{{ post.abstract }}</p>
+                {% elif post.search_description %}
+                    <p>{{ post.search_description }}</p>
+                {% endif %}
+            </article>
+        {% endfor %}
+    </section>
+{% else %}
+    <section class="empty-state">
+        <p class="eyebrow">essays</p>
+        <h2>More to come.</h2>
+        <p>The first essay will appear here.</p>
+    </section>
+{% endif %}
+
+{% if is_paginated %}
+    <nav class="pagination" aria-label="Essays">
+        {% if page_obj.has_previous %}
+            <a class="pagination__direction" href="?page={{ page_obj.previous_page_number }}">← newer</a>
+        {% else %}
+            <span class="pagination__direction pagination__direction--disabled">← newer</span>
+        {% endif %}
+        <span class="pagination__status">
+            {{ page_obj.number|stringformat:"02d" }} / {{ paginator.num_pages|stringformat:"02d" }}
+        </span>
+        {% if page_obj.has_next %}
+            <a class="pagination__direction pagination__direction--older" href="?page={{ page_obj.next_page_number }}">older →</a>
+        {% else %}
+            <span class="pagination__direction pagination__direction--disabled">older →</span>
+        {% endif %}
+    </nav>
+{% endif %}
+{% endblock %}

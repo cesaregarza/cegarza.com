@@ -313,7 +313,8 @@ class GhostImportTest(TestCase):
         self.assertEqual(BlogPage.objects.descendant_of(index).count(), 6)
         self.assertEqual(ContentPage.objects.descendant_of(index).count(), 1)
         self.assertEqual(BlogAuthor.objects.count(), 1)
-        self.assertEqual(BlogTag.objects.count(), 2)
+        self.assertEqual(BlogTag.objects.filter(ghost_id__isnull=False).count(), 2)
+        self.assertTrue(BlogTag.objects.filter(slug="essays").exists())
         self.assertEqual(GhostImageImport.objects.count(), 1)
         self.assertEqual(get_image_model().objects.count(), 1)
         self.assertEqual(
