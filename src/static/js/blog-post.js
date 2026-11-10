@@ -16,17 +16,6 @@
   };
 
   onReady(() => {
-    const setScrollOffset = () => {
-      const header = document.querySelector(".site-header");
-      if (!header) return;
-      const height = header.getBoundingClientRect().height;
-      const offset = Math.ceil(height + 16);
-      document.documentElement.style.setProperty("--site-header-offset", `${offset}px`);
-    };
-
-    setScrollOffset();
-    window.addEventListener("resize", setScrollOffset);
-
     const content = document.querySelector(".post-content");
     const readTimeEl = document.getElementById("postReadTime");
     const tocList = document.getElementById("postTocList");
