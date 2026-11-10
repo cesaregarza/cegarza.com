@@ -408,7 +408,7 @@ class WagtailImageImport(models.Model):
 
 
 class BlogIndexPage(RoutablePageMixin, Page):
-    """Signpost landing at ``/`` with the chronological listing at ``/writing/``.
+    """Signpost at ``/``, all writing at ``/writing/``, and essays at ``/essays/``.
 
     The page stays the Wagtail site root, so posts remain its direct children
     and keep their flat ``/<slug>/`` URLs. The default route renders the
@@ -474,6 +474,11 @@ class BlogIndexPage(RoutablePageMixin, Page):
             return base.rstrip("/") + "/writing/"
         return base
 
+    def essays_url(self, request=None):
+        site = Site.find_for_request(request) if request else None
+        base = (page_path_for_site(self, site) if site else self.get_url()) or "/"
+        return base.rstrip("/") + "/essays/"
+
     def _listing_context(self, request):
         posts = self._published_posts()
         paginator = Paginator(posts, 9)
@@ -538,6 +543,24 @@ class BlogIndexPage(RoutablePageMixin, Page):
         return self.render(
             request,
             context_overrides=self._listing_context(request),
+        )
+
+    @path("essays/")
+    def essays_route(self, request):
+        posts = self._published_posts().filter(tags__slug="essays")
+        paginator = Paginator(posts, 9)
+        page_obj = paginator.get_page(request.GET.get("page"))
+        return self.render(
+            request,
+            template="blog/essays_index_page.html",
+            context_overrides={
+                "posts": page_obj,
+                "page_obj": page_obj,
+                "paginator": paginator,
+                "is_paginated": paginator.num_pages > 1,
+                "listing_full_url": request.build_absolute_uri(self.essays_url(request)),
+                "essays_description": "Personal essays, reflections, and longer-form writing.",
+            },
         )
 
     class Meta:
@@ -747,6 +770,8 @@ class BlogPage(GhostContentFields, Page):
             index = self.get_parent().specific
             if isinstance(index, BlogIndexPage):
                 context["blog_index_url"] = index.listing_url(request)
+                if self.tags.filter(slug="essays").exists():
+                    context["essay_archive_url"] = index.essays_url(request)
             else:
                 context["blog_index_url"] = page_path_for_site(self.get_parent(), site)
 

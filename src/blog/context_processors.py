@@ -51,6 +51,7 @@ def site_navigation_values(site):
     navigation = {
         "site_home_url": "/",
         "site_writing_url": "/writing/",
+        "site_essays_url": "",
         "site_about_url": "",
         "site_series_url": "",
     }
@@ -73,6 +74,10 @@ def site_navigation_values(site):
         return navigation
 
     navigation["site_home_url"] = page_path_for_site(blog_index, site) or "/"
+    # Use the requesting Site's path, including nested indexes on legacy hosts.
+    navigation["site_essays_url"] = (
+        navigation["site_home_url"].rstrip("/") + "/essays/"
+    )
     if blog_index.is_root_for_site(site):
         navigation["site_writing_url"] = (
             navigation["site_home_url"].rstrip("/") + "/writing/"

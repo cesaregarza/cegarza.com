@@ -2482,8 +2482,14 @@ h6 {
         font-size: 11px;
     }
 
+    .site-nav {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
     .site-nav__link {
         min-width: 0;
+        min-height: 44px;
         padding: 0 9px;
         font-size: 9.5px;
         letter-spacing: 0.06em;

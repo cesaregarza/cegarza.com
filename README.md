@@ -64,6 +64,13 @@ The public defaults are:
 | `SITE_AUTHOR` | `Cesar Garza` |
 | `WAGTAILADMIN_BASE_URL` | `http://localhost:8000` |
 
+## Essays
+
+The `/essays/` archive lists published, public posts tagged **Essays** (slug
+`essays`). The tag is created automatically by the database migration. In
+Wagtail, select **Essays** under a blog post's **Tags**, then publish the post.
+Essays also appear in Writing and the site's feeds, keeping their existing URLs.
+
 ## Ghost import
 
 The existing `import_ghost` command accepts a purpose-built JSON export and a
