@@ -1246,6 +1246,12 @@ h6 {
     border-right: 1px solid var(--rule);
 }
 
+/* The rail takes focus as a whole when its drawer opens. It is a region, not a control, so it
+   draws no ring; the links inside keep theirs. */
+.post-sidebar:focus {
+    outline: none;
+}
+
 .post-rail {
     position: sticky;
     top: var(--site-header-offset);
@@ -2619,6 +2625,8 @@ h6 {
         grid-template-columns: minmax(0, 1fr);
     }
 
+    /* Below this width the rail is a drawer. Moving it off screen alone would leave its links
+       in the tab order, so a closed drawer is hidden as well. */
     .post-sidebar {
         position: fixed;
         top: var(--site-header-offset);
@@ -2632,6 +2640,7 @@ h6 {
         background: var(--color-surface-rail);
         transform: translateX(100%);
         transition: transform 180ms ease;
+        visibility: hidden;
     }
 
     .post-rail {
@@ -2641,6 +2650,7 @@ h6 {
 
     .toc-drawer-open .post-sidebar {
         transform: translateX(0);
+        visibility: visible;
     }
 
     .post-toc-backdrop {

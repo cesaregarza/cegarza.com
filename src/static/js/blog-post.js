@@ -23,6 +23,7 @@
     const toc = document.querySelector(".post-toc");
     const progressEl = document.getElementById("postTocProgress");
     const readingStatus = document.getElementById("readingStatus");
+    const drawer = document.getElementById("postOutline");
     const drawerToggle = document.getElementById("postTocDrawerToggle");
     const backdrop = document.getElementById("postTocBackdrop");
 
@@ -396,6 +397,8 @@
         setScrollbarOffset(`${scrollBarWidth}px`);
         document.body.classList.add("toc-drawer-open");
         if (drawerToggle) drawerToggle.setAttribute("aria-expanded", "true");
+        // The drawer does not follow its control in the document, so focus moves into it.
+        if (drawer) drawer.focus({ preventScroll: true });
       };
 
       const closeDrawer = () => {
@@ -404,10 +407,22 @@
         if (drawerToggle) drawerToggle.setAttribute("aria-expanded", "false");
       };
 
+      const focusIsInOpenDrawer = () =>
+        document.body.classList.contains("toc-drawer-open") &&
+        Boolean(drawer) &&
+        drawer.contains(document.activeElement);
+
+      // A closed drawer is hidden from the keyboard, so dismissing it hands focus back to its
+      // control.
+      const dismissDrawer = () => {
+        if (drawerToggle && focusIsInOpenDrawer()) drawerToggle.focus();
+        closeDrawer();
+      };
+
       if (drawerToggle) {
         drawerToggle.addEventListener("click", () => {
           if (document.body.classList.contains("toc-drawer-open")) {
-            closeDrawer();
+            dismissDrawer();
           } else {
             openDrawer();
           }
@@ -415,11 +430,11 @@
       }
 
       if (backdrop) {
-        backdrop.addEventListener("click", closeDrawer);
+        backdrop.addEventListener("click", dismissDrawer);
       }
 
       window.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") closeDrawer();
+        if (event.key === "Escape") dismissDrawer();
       });
 
       const updateActive = (id) => {
@@ -553,7 +568,12 @@
       queueRecompute();
 
       links.forEach((link) => {
-        link.addEventListener("click", closeDrawer);
+        link.addEventListener("click", () => {
+          // The reader moves to the link's heading, so focus is released there and not sent
+          // back to the control.
+          if (focusIsInOpenDrawer()) document.activeElement.blur();
+          closeDrawer();
+        });
       });
     }
 

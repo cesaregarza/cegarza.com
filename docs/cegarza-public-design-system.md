@@ -119,8 +119,11 @@ way when there is no room for them, and each remains reachable another way:
 
 - A skip link precedes the sticky header.
 - Every interactive control has a global `:focus-visible` outline.
-- The mobile contents drawer retains its labeled control, scrim, Escape
-  handling, and focusable links.
+- The mobile contents drawer retains its labeled control, scrim, and Escape
+  handling. A closed drawer is hidden, not only moved off screen, so its links
+  are in the tab order only while it is open. Opening it moves focus into the
+  drawer. Closing it with focus inside returns focus to the control, and
+  following a contents link releases focus at the heading.
 - Body copy remains at least 15px with a maximum 62-character measure. Essays
   use a larger serif on the `--essay-column` column instead.
 - Tables, code, math, and applets contain their own horizontal overflow.

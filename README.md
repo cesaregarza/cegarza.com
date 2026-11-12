@@ -28,6 +28,11 @@ make shell
 make static
 ```
 
+Run the tests from `src/` with `uv run pytest`. The contents-drawer keyboard
+tests drive headless Chromium; install it once with
+`uv run playwright install chromium`. Without it those tests skip locally and
+fail in CI.
+
 Docker-based development uses PostgreSQL:
 
 ```bash

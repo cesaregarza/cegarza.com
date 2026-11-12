@@ -113,7 +113,8 @@
 <div class="post-layout">
     {# Essays read as one column: no rail, no contents drawer. #}
     {% if not essay_archive_url %}
-    <aside class="post-sidebar" id="postOutline" aria-label="Post navigation">
+    {# The drawer script moves focus onto the rail as a whole, which needs a tabindex. #}
+    <aside class="post-sidebar" id="postOutline" aria-label="Post navigation" tabindex="-1">
         <div class="post-rail">
             {% if toc_items %}
                 {# A phone header has room for the contents control or the site menu, not both, so the menu opens with the drawer. #}
