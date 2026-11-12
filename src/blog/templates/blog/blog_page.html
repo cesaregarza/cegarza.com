@@ -225,8 +225,7 @@
                         {% else %}
                             <span>
                                 {% if post_series.series.status == "complete" %}series complete{% else %}end of{% endif %}
-                                <span class="post-series-end__proper">{{ post_series.series.title }}</span>
-                                {% if post_series.series.status == "ongoing" %}, for now{% endif %}
+                                <span class="post-series-end__proper">{{ post_series.series.title }}</span>{% if post_series.series.status == "ongoing" %}, for now{% endif %}
                             </span>
                             <span class="post-series-end__count">
                                 {{ post_series.part_count }} of {{ post_series.part_count }} published

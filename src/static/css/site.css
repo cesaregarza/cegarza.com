@@ -1163,11 +1163,6 @@ h6 {
     text-transform: lowercase;
 }
 
-.series-detail__next-up {
-    margin: 0;
-    padding: 12px 32px;
-}
-
 .post-series-band {
     display: flex;
     min-height: 44px;
@@ -1432,6 +1427,12 @@ h6 {
     letter-spacing: 0.04em;
     line-height: 1.6;
     text-transform: lowercase;
+}
+
+/* On a series page the note is the last row of the part list, so it takes the list's gutter. */
+.series-detail__next-up {
+    margin: 0;
+    padding: 12px 32px;
 }
 
 .post-series-also__list {
@@ -2836,6 +2837,10 @@ h6 {
     .series-part {
         grid-template-columns: 22px minmax(0, 1fr);
         gap: 10px;
+        padding: 12px 16px;
+    }
+
+    .series-detail__next-up {
         padding: 12px 16px;
     }
 

@@ -247,6 +247,8 @@ class OrderedSeriesTest(TestCase):
         self.assertNotContains(first_response, "Restricted part")
 
         self.assertContains(second_response, "end of")
+        # The comma sits against the series title, with no space before it.
+        self.assertContains(second_response, "Primary sequence</span>, for now")
         self.assertContains(second_response, "Part three is in progress.")
         self.assertContains(second_response, "series index →")
 
