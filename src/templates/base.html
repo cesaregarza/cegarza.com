@@ -100,6 +100,7 @@
                     <span class="site-title__primary">cegarza.com</span>
                 </a>
                 <div class="site-header__right">
+                    {% block header_status %}{% endblock %}
                     {% block primary_navigation %}
                         <nav class="site-nav" aria-label="Primary navigation">
                             <a
@@ -111,7 +112,7 @@
                                 <a
                                     class="site-nav__link"
                                     href="{{ site_essays_url }}"
-                                    {% if request.path == site_essays_url %}aria-current="page"{% endif %}
+                                    {% if request.path == site_essays_url %}aria-current="page"{% elif essay_archive_url %}aria-current="true"{% endif %}
                                 >essays</a>
                             {% endif %}
                             {% if site_series_url %}
@@ -121,8 +122,13 @@
                                     {% if request.path|slice:":8" == "/series/" %}aria-current="page"{% endif %}
                                 >series</a>
                             {% endif %}
-                            <a class="site-nav__link" href="{{ site_writing_url|default:'/writing/' }}#applets">applets</a>
-                            <a class="site-nav__link" href="/feed/">rss</a>
+                            {% if site_about_url %}
+                                <a
+                                    class="site-nav__link"
+                                    href="{{ site_about_url }}"
+                                    {% if request.path == site_about_url %}aria-current="page"{% endif %}
+                                >about</a>
+                            {% endif %}
                         </nav>
                     {% endblock %}
                     <div class="site-header__actions">

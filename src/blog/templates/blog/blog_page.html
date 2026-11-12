@@ -24,15 +24,17 @@
     {% include "blog/includes/jsonld_breadcrumbs.html" %}
 {% endblock %}
 
-{% block body_class %}page--article{% endblock %}
+{% block body_class %}page--article{% if essay_archive_url %} page--essay{% elif toc_items %} page--has-contents{% endif %}{% endblock %}
 
-{% block primary_navigation %}
-    <p
-        class="reading-status"
-        id="readingStatus"
-        data-read-minutes="{{ readtime_main|default:'1 min' }}"
-        aria-live="polite"
-    >0% · {{ readtime_main|default:"1 min" }} left</p>
+{% block header_status %}
+    {% if not essay_archive_url %}
+        <p
+            class="reading-status"
+            id="readingStatus"
+            data-read-minutes="{{ readtime_main|default:'1 min' }}"
+            aria-live="polite"
+        >0% · {{ readtime_main|default:"1 min" }} left</p>
+    {% endif %}
 {% endblock %}
 
 {% block header_progress %}
@@ -68,25 +70,49 @@
 {% endblock %}
 
 <header class="post-header">
-    <p class="post-meta" id="postReadTime">
-        {% if page.date %}
-            <time datetime="{{ page.date|date:'Y-m-d' }}">{{ page.date|date:"Y-m-d" }}</time>
+    {% if essay_archive_url %}
+        <p class="eyebrow">essay</p>
+        <h1>{{ page.title }}</h1>
+        {% if page.abstract %}
+            <p class="post-header__abstract">{{ page.abstract }}</p>
+        {% endif %}
+        <p class="post-meta" id="postReadTime">
+            <span class="post-meta__item">
+                <span class="post-meta__proper">{{ page.primary_author.name|default:site_author }}</span>
+                <span aria-hidden="true">·</span>
+            </span>
+            {% if page.date %}
+                <span class="post-meta__item">
+                    <time class="post-meta__proper" datetime="{{ page.date|date:'Y-m-d' }}">{{ page.date|date:"F Y" }}</time>
+                    <span aria-hidden="true">·</span>
+                </span>
+            {% endif %}
+            <span class="post-meta__item"><span class="post-readtime__main">{{ readtime_main|default:"— min" }}</span> read</span>
+        </p>
+    {% else %}
+        <p class="post-meta" id="postReadTime">
+            {% if page.date %}
+                <time datetime="{{ page.date|date:'Y-m-d' }}">{{ page.date|date:"Y-m-d" }}</time>
+                <span aria-hidden="true">·</span>
+            {% endif %}
+            <span class="post-meta__proper">{{ page.primary_author.name|default:site_author }}</span>
             <span aria-hidden="true">·</span>
+            <span class="post-readtime__main">{{ readtime_main|default:"— min" }}</span>
+            {# The deep time counts every word, so it only says something new when a post has collapsed sections. #}
+            {% if readtime_deep and readtime_deep != readtime_main %}
+                <span class="post-readtime__deep">+{{ readtime_deep }} deep</span>
+            {% endif %}
+        </p>
+        <h1>{{ page.title }}</h1>
+        {% if page.abstract %}
+            <p class="post-header__abstract">{{ page.abstract }}</p>
         {% endif %}
-        <span class="post-meta__proper">{{ page.primary_author.name|default:site_author }}</span>
-        <span aria-hidden="true">·</span>
-        <span class="post-readtime__main">{{ readtime_main|default:"— min" }}</span>
-        {% if readtime_deep %}
-            <span class="post-readtime__deep">+{{ readtime_deep }} deep</span>
-        {% endif %}
-    </p>
-    <h1>{{ page.title }}</h1>
-    {% if page.abstract %}
-        <p class="post-header__abstract">{{ page.abstract }}</p>
     {% endif %}
 </header>
 
 <div class="post-layout">
+    {# Essays read as one column: no rail, no contents drawer. #}
+    {% if not essay_archive_url %}
     <aside class="post-sidebar" id="postOutline" aria-label="Post navigation">
         <div class="post-rail">
             {% block post_series_rail %}
@@ -149,12 +175,8 @@
                 </section>
             {% endif %}
 
-            <nav class="post-rail__actions" aria-label="Article actions">
-                {% if essay_archive_url %}
-                    <a href="{{ essay_archive_url }}">&larr; Back to essays</a>
-                {% else %}
-                    <a href="{{ blog_index_url|default:site_home_url|default:'/' }}">&larr; Back to posts</a>
-                {% endif %}
+            <nav class="post-actions" aria-label="Article actions">
+                <a href="{{ blog_index_url|default:site_home_url|default:'/' }}">&larr; Back to posts</a>
                 <button type="button" data-share-action data-share-url="{{ current_page_url }}">share</button>
                 <button
                     type="button"
@@ -166,6 +188,7 @@
         </div>
     </aside>
     <div class="post-toc-backdrop" id="postTocBackdrop" aria-hidden="true"></div>
+    {% endif %}
 
     <article class="post">
         {% if page.featured_image %}
@@ -222,7 +245,6 @@
                             {% elif post_series.series.description %}
                                 <p>{{ post_series.series.description }}</p>
                             {% endif %}
-                            <a href="{{ post_series.url }}">all parts →</a>
                         {% endif %}
                     </div>
                 </section>
@@ -235,44 +257,48 @@
                     <span>← part {{ series_previous.number|stringformat:"02d" }}</span>
                     <strong>{{ series_previous.page.title }}</strong>
                 </a>
-            {% elif post_series %}
-                <span class="post-nav__item post-nav__item--empty"></span>
             {% elif previous_post %}
                 <a class="post-nav__item" href="{% pageurl previous_post %}">
-                    <span>← previous</span>
+                    <span>← previous{% if essay_archive_url %} essay{% endif %}</span>
                     <strong>{{ previous_post.title }}</strong>
                 </a>
-            {% else %}
-                <span class="post-nav__item post-nav__item--empty"></span>
             {% endif %}
-            {% if series_next %}
-                <a class="post-nav__item post-nav__item--next" href="{{ series_next.url }}">
-                    <span>part {{ series_next.number|stringformat:"02d" }} →</span>
-                    <strong>{{ series_next.page.title }}</strong>
-                </a>
-            {% elif post_series %}
+            {% if post_series %}
+                {# The series end card above links the next part, so this slot leads back to the series. #}
                 <a class="post-nav__item post-nav__item--next" href="{{ post_series.url }}">
                     <span>series index →</span>
                     <strong>{{ post_series.series.title }}</strong>
                 </a>
             {% elif next_post %}
                 <a class="post-nav__item post-nav__item--next" href="{% pageurl next_post %}">
-                    <span>next →</span>
+                    <span>next{% if essay_archive_url %} essay{% endif %} →</span>
                     <strong>{{ next_post.title }}</strong>
+                </a>
+            {% elif essay_archive_url %}
+                <a class="post-nav__item post-nav__item--next" href="{{ essay_archive_url }}">
+                    <span>essays index →</span>
+                    <strong>All essays</strong>
                 </a>
             {% else %}
                 <a class="post-nav__item post-nav__item--next" href="{{ blog_index_url|default:site_home_url|default:'/' }}">
                     <span>posts index →</span>
-                    <strong>all posts</strong>
+                    <strong>All posts</strong>
                 </a>
             {% endif %}
         </nav>
+
+        {% if essay_archive_url %}
+            <nav class="post-actions post-actions--end" aria-label="Article actions">
+                <button type="button" data-share-action data-share-url="{{ current_page_url }}">share</button>
+                <a href="#main-content">↑ top</a>
+            </nav>
+        {% endif %}
     </article>
 </div>
 {% endblock %}
 
 {% block header_actions %}
-{% if toc_items %}
+{% if toc_items and not essay_archive_url %}
     <button
         class="post-toc-drawer-toggle"
         id="postTocDrawerToggle"

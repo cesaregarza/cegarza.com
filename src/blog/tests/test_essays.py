@@ -153,12 +153,70 @@ class EssaysArchiveTest(TestCase):
             html=True,
         )
 
-    def test_essays_keep_their_post_urls_and_appear_in_all_writing_and_feeds(self):
+    def test_essay_posts_read_as_one_column_without_the_technical_chrome(self):
+        essay = self.get("/published-essay/")
+        note = self.get("/technical-note/")
+
+        self.assertContains(essay, '<body class="page--article page--essay">')
+        self.assertContains(essay, '<p class="eyebrow">essay</p>', html=True)
+        self.assertContains(essay, '<span class="post-meta__proper">Cesar Garza</span>', html=True)
+        self.assertContains(essay, "</span> read</span>")
+        self.assertContains(essay, 'class="post-actions post-actions--end"')
+        self.assertContains(essay, "data-share-action")
+        # The essays link is marked as the current section, not the current page.
         self.assertContains(
-            self.get("/published-essay/"),
-            '<a href="/essays/">&larr; Back to essays</a>',
+            essay,
+            '<a class="site-nav__link" href="/essays/" aria-current="true">essays</a>',
             html=True,
         )
+        for technical_chrome in (
+            'id="postOutline"',
+            'id="readingStatus"',
+            'id="postTocDrawerToggle"',
+            "data-cite-action",
+            "Back to",
+        ):
+            self.assertNotContains(essay, technical_chrome)
+
+        self.assertContains(note, '<body class="page--article">')
+        self.assertContains(note, 'id="postOutline"')
+        self.assertContains(note, 'id="readingStatus"')
+        self.assertContains(note, "data-cite-action")
+        self.assertNotContains(note, 'class="eyebrow"')
+        self.assertNotContains(note, "post-actions--end")
+        self.assertContains(
+            note,
+            '<a class="site-nav__link" href="/essays/">essays</a>',
+            html=True,
+        )
+
+    def test_essay_neighbours_stay_within_the_essays(self):
+        self.add_post("second-essay")
+
+        first = self.get("/published-essay/")
+        second = self.get("/second-essay/")
+        note = self.get("/technical-note/")
+
+        self.assertEqual(first.context["next_post"].slug, "second-essay")
+        self.assertNotIn("previous_post", first.context)
+        self.assertContains(first, "next essay →")
+        self.assertNotContains(first, "Technical note")
+
+        self.assertEqual(second.context["previous_post"].slug, "published-essay")
+        self.assertNotIn("next_post", second.context)
+        self.assertContains(second, "← previous essay")
+        self.assertContains(second, "essays index →")
+        self.assertContains(second, "All essays")
+        self.assertNotContains(second, "Technical note")
+
+        # A technical post still walks every post in publication order.
+        self.assertEqual(note.context["previous_post"].slug, "published-essay")
+        self.assertEqual(note.context["next_post"].slug, "second-essay")
+        self.assertNotContains(note, "previous essay")
+        self.assertNotContains(note, "next essay")
+
+    def test_essays_keep_their_post_urls_and_appear_in_all_writing_and_feeds(self):
+        self.assertEqual(self.get("/published-essay/").status_code, 200)
         self.assertContains(
             self.get("/technical-note/"),
             '<a href="/writing/">&larr; Back to posts</a>',

@@ -1,7 +1,7 @@
 # cegarza.com style guide
 
 The public site uses a dark editorial-console aesthetic: near-black navy
-surfaces, restrained cyan and violet accents, strong typographic hierarchy,
+surfaces, restrained fuchsia and purple accents, strong typographic hierarchy,
 and compact monospace metadata. The interface should feel like a thoughtful
 personal notebook rather than a product dashboard.
 
@@ -9,7 +9,10 @@ personal notebook rather than a product dashboard.
 
 - Prioritize reading comfort and clear information hierarchy.
 - Use accent color to signal structure, not as decoration.
-- Keep navigation terse, stable, and keyboard accessible.
+- Keep navigation terse, stable, and keyboard accessible. The header menu is
+  `writing / essays / series / about`, in that order, on every page.
+- Give essays a quieter register than technical posts: one serif column, the
+  byline under the title, and none of the technical reading aids.
 - Preserve visible focus states and WCAG AA contrast.
 - Respect reduced-motion preferences.
 - Use the shared tokens and components documented in

@@ -239,8 +239,10 @@ class OrderedSeriesTest(TestCase):
         self.assertContains(first_response, "Primary sequence")
         self.assertContains(first_response, "also in")
         self.assertContains(first_response, "Secondary sequence")
-        self.assertContains(first_response, "part 02 →")
+        # The end card carries the next part, so the page navigation does not repeat it.
         self.assertContains(first_response, "continue →")
+        self.assertNotContains(first_response, "part 02 →")
+        self.assertContains(first_response, "series index →")
         self.assertNotContains(first_response, "Draft part")
         self.assertNotContains(first_response, "Restricted part")
 

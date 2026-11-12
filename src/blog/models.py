@@ -784,12 +784,11 @@ class BlogPage(GhostContentFields, Page):
         )
         context.update(series_context)
         if not series_context["post_series"]:
-            siblings = list(
-                BlogPage.objects.child_of(self.get_parent())
-                .live()
-                .public()
-                .order_by("first_published_at", "pk")
-            )
+            neighbours = BlogPage.objects.child_of(self.get_parent()).live().public()
+            if "essay_archive_url" in context:
+                # An essay's previous and next links stay within the essays.
+                neighbours = neighbours.filter(tags__slug="essays")
+            siblings = list(neighbours.order_by("first_published_at", "pk"))
             current_index = next(
                 (index for index, post in enumerate(siblings) if post.pk == self.pk),
                 None,

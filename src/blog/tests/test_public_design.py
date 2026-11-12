@@ -109,6 +109,41 @@ class PublicDesignTemplateTest(TestCase):
         self.assertContains(response, 'aria-controls="postOutline"')
         self.assertContains(response, 'id="postOutline"')
         self.assertContains(response, 'class="post-nav"')
+        self.assertContains(response, '<body class="page--article page--has-contents">')
+        self.assertContains(response, 'class="post-actions"')
+
+    def test_header_menu_is_the_same_four_links_on_every_page(self):
+        for path in ("/", "/writing/", "/representative-note/", "/about/"):
+            html = self.get_page(path).content.decode("utf-8")
+            header = html[html.index('<header class="site-header">') : html.index("</header>")]
+
+            self.assertIn('href="/writing/"', header, path)
+            self.assertIn('href="/essays/"', header, path)
+            self.assertIn('href="/about/"', header, path)
+            self.assertNotIn("applets", header, path)
+            self.assertNotIn("rss", header, path)
+
+        about = self.get_page("/about/")
+        self.assertContains(
+            about,
+            '<a class="site-nav__link" href="/about/" aria-current="page">about</a>',
+            html=True,
+        )
+
+    def test_read_time_shows_the_deep_figure_only_when_it_differs(self):
+        plain = self.get_page("/representative-note/")
+        self.assertContains(plain, 'class="post-readtime__main"')
+        self.assertNotContains(plain, "post-readtime__deep")
+
+        BlogPage.objects.filter(pk=self.post.pk).update(
+            body_rendered_readtime_main="4 min",
+            body_rendered_readtime_deep="9 min",
+        )
+        self.assertContains(
+            self.get_page("/representative-note/"),
+            '<span class="post-readtime__deep">+9 min deep</span>',
+            html=True,
+        )
 
     def test_about_page_uses_the_static_content_composition(self):
         response = self.get_page("/about/")
@@ -117,7 +152,9 @@ class PublicDesignTemplateTest(TestCase):
         self.assertContains(response, 'class="content-page"')
         self.assertContains(response, 'class="content-page__body"')
         self.assertContains(response, "An independent technical notebook")
-        self.assertContains(response, 'class="content-page__rail"')
+        self.assertContains(response, '<p class="eyebrow">about</p>', html=True)
+        # The page is one column: the old side rail only repeated the site menu.
+        self.assertNotContains(response, "content-page__rail")
 
     def test_error_states_share_tokens_and_remain_noindex(self):
         context = {
@@ -139,6 +176,15 @@ class PublicDesignTemplateTest(TestCase):
         # ...but 500 keeps the shared default so the block override did not leak.
         self.assertIn("back to posts →", server_error)
         self.assertNotIn("browse writing →", server_error)
+
+        # Both render inside the shared site shell and offer more than one way out.
+        for rendered in (not_found, server_error):
+            self.assertIn('<body class="page--error">', rendered)
+            self.assertIn('class="site-header"', rendered)
+            self.assertIn('class="site-footer"', rendered)
+            self.assertIn('<h1 id="error-heading">', rendered)
+        self.assertIn('<a href="/essays/">essays →</a>', not_found)
+        self.assertIn('<a href="/">home →</a>', not_found)
 
     def test_katex_is_gated_to_math_posts_only(self):
         math_post = BlogPage(
@@ -246,6 +292,9 @@ class PublicDesignTemplateTest(TestCase):
         self.assertIn("--series-wash:", css)
         self.assertIn("--font-head:", css)
         self.assertIn("--measure-reading:", css)
+        self.assertIn("--font-serif:", css)
+        self.assertIn("--essay-column:", css)
+        self.assertIn(".page--essay .post-content", css)
         self.assertIn(":focus-visible", css)
         self.assertIn("@media (prefers-reduced-motion: reduce)", css)
         self.assertIn("@media (prefers-color-scheme: light)", css)
@@ -291,6 +340,9 @@ class PublicDesignTemplateTest(TestCase):
             "ibm-plex-sans-500-latin.woff2",
             "ibm-plex-sans-600-latin.woff2",
             "ibm-plex-sans-700-latin.woff2",
+            "ibm-plex-serif-400-latin.woff2",
+            "ibm-plex-serif-400-italic-latin.woff2",
+            "ibm-plex-serif-600-latin.woff2",
         }
 
         self.assertTrue(expected_fonts.issubset({path.name for path in font_dir.glob("*.woff2")}))
