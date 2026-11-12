@@ -1,0 +1,29 @@
+{# The site menu. Its URLs come from the site context processor; pass current_path to mark the section being read. #}
+<nav class="site-nav" aria-label="Primary navigation">
+    <a
+        class="site-nav__link"
+        href="{{ site_writing_url|default:'/writing/' }}"
+        {% if current_path|slice:":9" == "/writing/" %}aria-current="page"{% endif %}
+    >writing</a>
+    {% if site_essays_url %}
+        <a
+            class="site-nav__link"
+            href="{{ site_essays_url }}"
+            {% if current_path == site_essays_url %}aria-current="page"{% elif essay_archive_url %}aria-current="true"{% endif %}
+        >essays</a>
+    {% endif %}
+    {% if site_series_url %}
+        <a
+            class="site-nav__link"
+            href="{{ site_series_url }}"
+            {% if current_path|slice:":8" == "/series/" %}aria-current="page"{% endif %}
+        >series</a>
+    {% endif %}
+    {% if site_about_url %}
+        <a
+            class="site-nav__link"
+            href="{{ site_about_url }}"
+            {% if current_path == site_about_url %}aria-current="page"{% endif %}
+        >about</a>
+    {% endif %}
+</nav>

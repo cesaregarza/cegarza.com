@@ -14,13 +14,14 @@
 </head>
 <body class="page--error">
     <a class="skip-link" href="#main-content">Skip to content</a>
-    {# Same shell as the rest of the site, written out here so an error page never depends on page context. #}
+    {# Same shell as the rest of the site, written out here so a server error never depends on page context. #}
     <div class="page-shell">
         <header class="site-header">
             <div class="container site-header__inner">
                 <a href="/" class="site-title" aria-label="{{ site_name }} home">
                     <span class="site-title__primary">cegarza.com</span>
                 </a>
+                {% block error_navigation %}{% endblock %}
             </div>
         </header>
 

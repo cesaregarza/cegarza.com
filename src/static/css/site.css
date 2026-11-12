@@ -452,6 +452,11 @@ h6 {
     border-bottom: 2px solid var(--accent);
 }
 
+/* The copy of the menu inside the post drawer shows only on phones. */
+.post-rail .site-nav {
+    display: none;
+}
+
 .site-header__actions {
     display: flex;
     align-items: center;
@@ -2701,9 +2706,21 @@ h6 {
     }
 
     /* A phone header fits the site menu or the contents toggle, not both.
-       Posts with a contents drawer keep the toggle. */
-    .page--has-contents .site-nav {
+       Posts with a contents drawer keep the toggle, and the drawer opens with the menu. */
+    .page--has-contents .site-header .site-nav {
         display: none;
+    }
+
+    .post-rail .site-nav {
+        display: flex;
+        margin: -14px 0 14px;
+        gap: 0 18px;
+        border-bottom: 1px solid var(--rule);
+    }
+
+    .post-rail .site-nav__link,
+    .post-rail .site-nav__link:last-child {
+        padding: 0;
     }
 
     .site-footer__inner {

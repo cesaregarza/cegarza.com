@@ -115,6 +115,10 @@
     {% if not essay_archive_url %}
     <aside class="post-sidebar" id="postOutline" aria-label="Post navigation">
         <div class="post-rail">
+            {% if toc_items %}
+                {# A phone header has room for the contents control or the site menu, not both, so the menu opens with the drawer. #}
+                {% include "includes/site_nav.html" with current_path=request.path %}
+            {% endif %}
             {% block post_series_rail %}
                 {% if post_series %}
                     <section class="post-series-rail">

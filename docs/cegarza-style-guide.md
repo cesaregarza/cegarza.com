@@ -10,7 +10,9 @@ personal notebook rather than a product dashboard.
 - Prioritize reading comfort and clear information hierarchy.
 - Use accent color to signal structure, not as decoration.
 - Keep navigation terse, stable, and keyboard accessible. The header menu is
-  `writing / essays / series / about`, in that order, on every page.
+  `writing / essays / series / about`, in that order, on every page. The design
+  system names the two exceptions: a phone post with a contents list opens the
+  menu with its drawer, and the server-error page shows the site title alone.
 - Give essays a quieter register than technical posts: one serif column, the
   byline under the title, and none of the technical reading aids.
 - Preserve visible focus states and WCAG AA contrast.

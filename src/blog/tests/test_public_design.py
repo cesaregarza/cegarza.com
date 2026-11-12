@@ -183,6 +183,54 @@ class PublicDesignTemplateTest(TestCase):
             html=True,
         )
 
+    def test_not_found_page_keeps_the_header_menu_and_the_server_error_stays_static(self):
+        response = self.get_page("/no-such-page/")
+        html = response.content.decode("utf-8")
+        header = html[html.index('<header class="site-header">') : html.index("</header>")]
+
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('class="site-nav"', header)
+        for href in ("/writing/", "/essays/", "/about/"):
+            self.assertIn(f'href="{href}"', header)
+        # Nothing is the current section on a page that does not exist.
+        self.assertNotIn("aria-current", header)
+
+        # A server error keeps a shell that needs no site data.
+        self.assertNotIn("site-nav", render_to_string("500.html", {}))
+
+    def test_a_post_with_contents_opens_the_menu_with_its_drawer_on_phones(self):
+        plain = BlogPage(
+            title="A note without headings",
+            slug="plain-note",
+            date=date(2026, 7, 29),
+            body=[("markdown", "One paragraph and no contents list.")],
+        )
+        self.index.add_child(instance=plain)
+        plain.save_revision().publish()
+
+        def drawer(path):
+            html = self.get_page(path).content.decode("utf-8")
+            return html[html.index('<aside class="post-sidebar"') : html.index("</aside>")]
+
+        with_contents = drawer("/representative-note/")
+        self.assertIn('class="site-nav"', with_contents)
+        for href in ("/writing/", "/essays/", "/about/"):
+            self.assertIn(f'href="{href}"', with_contents)
+        self.assertLess(
+            with_contents.index('class="site-nav"'),
+            with_contents.index('class="post-rail__section post-toc"'),
+        )
+        # A post without a contents control keeps the menu in its header at every width.
+        self.assertNotIn("site-nav", drawer("/plain-note/"))
+
+        css = (Path(settings.BASE_DIR) / "static" / "css" / "site.css").read_text(encoding="utf-8")
+        wide = css[: css.index("@media (max-width: 1099px)")]
+        phone = css[css.index("@media (max-width: 699px)") : css.index("@media (max-width: 359px)")]
+        # The drawer copy shows only where the header gives its menu up for the contents control.
+        self.assertRegex(wide, r"\.post-rail \.site-nav \{\s*display: none;")
+        self.assertRegex(phone, r"\.page--has-contents \.site-header \.site-nav \{\s*display: none;")
+        self.assertRegex(phone, r"\.post-rail \.site-nav \{\s*display: flex;")
+
     def test_read_time_shows_the_deep_figure_only_when_it_differs(self):
         plain = self.get_page("/representative-note/")
         self.assertContains(plain, 'class="post-readtime__main"')

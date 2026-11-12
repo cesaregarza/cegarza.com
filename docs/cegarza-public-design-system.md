@@ -75,7 +75,10 @@ separators only, never for words a reader is meant to read.
   radius and rule system.
 - `.content-page`, `.directory-grid`, and `.error-state` cover public pages
   outside the main publication flow. `.content-page` is a single column. Error
-  pages render inside the same header and footer as every other page.
+  pages render inside the same header and footer as every other page. The
+  not-found page carries the header menu with no link marked current. The
+  server-error page keeps the site title alone, so it renders without any site
+  data.
 
 ## Series content contract
 
@@ -108,8 +111,8 @@ way when there is no room for them, and each remains reachable another way:
 
 - the reading status text below 900px (the progress bar stays);
 - the header menu below 700px on a post that has a contents drawer, where the
-  header holds the `contents` control instead (the drawer and the footer still
-  link out);
+  header holds the `contents` control instead and the drawer it opens starts
+  with the same four links;
 - the paragraph anchor marks below 700px.
 
 ## Accessibility and performance

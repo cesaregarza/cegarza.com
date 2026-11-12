@@ -1,6 +1,12 @@
 {% extends "error_base.html" %}
 
 {% block error_title %}404 - Page Not Found{% endblock %}
+{# A missing page is still served with the site's data, so it keeps the header menu. No section is marked current. #}
+{% block error_navigation %}
+    <div class="site-header__right">
+        {% include "includes/site_nav.html" %}
+    </div>
+{% endblock %}
 {% block error_code %}404{% endblock %}
 {% block error_label %}page not found{% endblock %}
 {% block error_heading %}There is nothing at this address.{% endblock %}
