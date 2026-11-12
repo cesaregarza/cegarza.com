@@ -783,13 +783,14 @@ class BlogPage(GhostContentFields, Page):
             site=site,
         )
         context.update(series_context)
-        if not series_context["post_series"]:
-            siblings = list(
-                BlogPage.objects.child_of(self.get_parent())
-                .live()
-                .public()
-                .order_by("first_published_at", "pk")
-            )
+        is_essay = "essay_archive_url" in context
+        # A series part is navigated by its series. An essay is the exception: its
+        # previous and next links stay within the essays, in a series or not.
+        if is_essay or not series_context["post_series"]:
+            neighbours = BlogPage.objects.child_of(self.get_parent()).live().public()
+            if is_essay:
+                neighbours = neighbours.filter(tags__slug="essays")
+            siblings = list(neighbours.order_by("first_published_at", "pk"))
             current_index = next(
                 (index for index, post in enumerate(siblings) if post.pk == self.pk),
                 None,

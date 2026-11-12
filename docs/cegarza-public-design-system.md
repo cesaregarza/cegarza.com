@@ -11,7 +11,8 @@ is grouped by hierarchy rather than placed inside floating cards.
    the page.
 2. **Hierarchy comes from type.** Archivo carries titles and headings. IBM Plex
    Sans carries reading copy. IBM Plex Mono is reserved for navigation,
-   metadata, labels, code, and numeric status.
+   metadata, labels, code, and numeric status. IBM Plex Serif carries the body
+   of an essay and nothing else.
 3. **Chrome is lowercase, content is not.** Mono labels use
    `text-transform: lowercase`; author names, post titles, and series names opt
    out so source content keeps its intended casing.
@@ -31,29 +32,53 @@ Tokens live at the top of `src/static/css/site.css`.
 | Text | `--color-text-primary`, `--color-text-secondary`, `--color-text-muted`, `--color-text-disabled` |
 | Active state | `--accent*` |
 | Series | `--series*` |
-| Callouts | `--cat-explainer`, `--cat-technical`, `--cat-extra`, `--cat-subquest` |
-| Type | `--font-ui`, `--font-head`, `--font-mono`, `--measure-reading` |
+| Callouts | `--cat-explainer`, `--cat-technical`, `--cat-extra`, `--cat-subquest`, each with a `-on` partner for a label set on that colour |
+| Type | `--font-ui`, `--font-head`, `--font-mono`, `--font-serif`, `--measure-reading` |
+| Chrome sizes | `--text-chrome` for mono navigation, metadata, and labels; `--text-micro` for the smallest status text |
+| Essays | `--essay-column`, `--essay-text` |
 
 The dark palette is the default. `prefers-color-scheme: light` switches the
 document to the light palette, and a `data-theme="light|dark"` attribute on
-`html` can override the OS choice. All three font families are self-hosted in
-`src/static/fonts/` with `font-display: swap`.
+`html` can override the OS choice. The light palette restates the series and
+callout colours, because the dark values are too pale to read on a light
+surface. All four font families are self-hosted in `src/static/fonts/` with
+`font-display: swap`.
+
+Every text, accent, series, and callout colour reads at 4.5:1 or better on
+every surface of its palette, and so does each `-on` colour on its fill.
+`--color-text-disabled` is the exception: it is for inactive controls and
+separators only, never for words a reader is meant to read.
 
 ## Reusable primitives
 
 - `.site-title`, `.site-nav`, `.reading-progress`, and `.site-footer` form the
-  shared chrome.
+  shared chrome. The header menu is `writing / essays / series / about` on
+  every page; a link appears only when its destination exists. Feeds and the
+  applets list stay in the footer and on the writing page.
 - `.index-hero`, `.index-stats`, `.lead-post`, `.series-group`, `.post-grid`,
   and `.pagination` form the publication index.
 - `.series-hero`, `.series-card`, `.series-progress`, and `.series-part` form
   series indexes and hubs.
 - `.post-series-band`, `.post-header`, `.post-rail`, `.post-toc`,
-  `.post-series-end`, and `.post-nav` form long-form posts.
+  `.post-actions`, `.post-series-end`, and `.post-nav` form long-form posts.
+  In a series the end card links the next part and `.post-nav` links back to
+  the series, so the same destination is never offered twice. An essay in a
+  series is the exception described next.
+- `.page--essay` is the essay variant of a post, applied to posts tagged
+  `essays`. It drops the rail, contents drawer, and reading status for one
+  centred `--essay-column` column, sets the body in the serif, and moves the
+  byline under the title. Previous and next stay within the essays, also for
+  an essay that is part of a series: its band and end card carry the series
+  links, and `.post-nav` never leaves the essays.
 - `.takeaway`, `.collapsible-block`, `.glossary-tooltip`, `.code-block`,
   `.applet-embed`, tables, and blockquotes share the same two-pixel-or-less
   radius and rule system.
 - `.content-page`, `.directory-grid`, and `.error-state` cover public pages
-  outside the main publication flow.
+  outside the main publication flow. `.content-page` is a single column. Error
+  pages render inside the same header and footer as every other page. The
+  not-found page carries the header menu with no link marked current. The
+  server-error page keeps the site title alone, so it renders without any site
+  data.
 
 ## Series content contract
 
@@ -77,24 +102,38 @@ non-public posts therefore never create a public part or an empty detail route.
   grid lists collapse to one column.
 - **Below 700px:** gutters become 16px, titles become 27px, featured images use
   a 150px crop, series bands wrap, and interactive targets remain at least
-  44px.
+  44px. The header stays on one row.
+- **Below 360px:** the title and menu tighten once more so the header still
+  fits on one row.
 
-No meaningful content is hidden at a breakpoint.
+No meaningful content is hidden at a breakpoint. Three pieces of chrome give
+way when there is no room for them, and each remains reachable another way:
+
+- the reading status text below 900px (the progress bar stays);
+- the header menu below 700px on a post that has a contents drawer, where the
+  header holds the `contents` control instead and the drawer it opens starts
+  with the same four links;
+- the paragraph anchor marks below 700px.
 
 ## Accessibility and performance
 
 - A skip link precedes the sticky header.
 - Every interactive control has a global `:focus-visible` outline.
-- The mobile contents drawer retains its labeled control, scrim, Escape
-  handling, and focusable links.
-- Body copy remains at least 15px with a maximum 62-character measure.
+- The mobile contents drawer retains its labeled control, scrim, and Escape
+  handling. A closed drawer is hidden, not only moved off screen, so its links
+  are in the tab order only while it is open. Opening it moves focus into the
+  drawer. Closing it with focus inside returns focus to the control, and
+  following a contents link releases focus at the heading.
+- Body copy remains at least 15px with a maximum 62-character measure. Essays
+  use a larger serif on the `--essay-column` column instead.
 - Tables, code, math, and applets contain their own horizontal overflow.
 - Only the functional two-pixel reading-progress bar uses a gradient.
 - `prefers-reduced-motion` removes transition duration.
 - The index lead image is eager; subsequent content and Wagtail block images
   remain lazy.
 
-Visual review covers the index, About, 404, a text-heavy post, and a
-diagram/image/table/code-heavy post at 390px and 1440px. Series work adds the
+Visual review covers the index, About, 404, a text-heavy post, an essay, and a
+diagram/image/table/code-heavy post at 390px and 1440px, in both the dark and
+the light palette. Header changes add 360px and 320px. Series work adds the
 series hub, a first part, a current middle part, and an incomplete latest part
 to the same matrix.

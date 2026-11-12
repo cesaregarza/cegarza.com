@@ -239,12 +239,16 @@ class OrderedSeriesTest(TestCase):
         self.assertContains(first_response, "Primary sequence")
         self.assertContains(first_response, "also in")
         self.assertContains(first_response, "Secondary sequence")
-        self.assertContains(first_response, "part 02 →")
+        # The end card carries the next part, so the page navigation does not repeat it.
         self.assertContains(first_response, "continue →")
+        self.assertNotContains(first_response, "part 02 →")
+        self.assertContains(first_response, "series index →")
         self.assertNotContains(first_response, "Draft part")
         self.assertNotContains(first_response, "Restricted part")
 
         self.assertContains(second_response, "end of")
+        # The comma sits against the series title, with no space before it.
+        self.assertContains(second_response, "Primary sequence</span>, for now")
         self.assertContains(second_response, "Part three is in progress.")
         self.assertContains(second_response, "series index →")
 

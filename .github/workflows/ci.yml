@@ -53,6 +53,9 @@ jobs:
         working-directory: src
         run: uv run python manage.py makemigrations --check --dry-run
 
+      - name: Install the test browser
+        run: uv run playwright install --with-deps --only-shell chromium
+
       - name: Test
         working-directory: src
         run: uv run pytest -q

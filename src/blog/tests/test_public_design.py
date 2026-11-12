@@ -1,3 +1,4 @@
+import re
 from datetime import date
 from pathlib import Path
 
@@ -9,6 +10,58 @@ from wagtail.images.tests.utils import get_test_image_file
 from wagtail.models import Site
 
 from blog.models import BlogIndexPage, BlogPage, ContentPage
+
+SURFACE_TOKENS = (
+    "--color-bg",
+    "--color-surface",
+    "--color-surface-2",
+    "--color-surface-sunk",
+    "--color-surface-rail",
+)
+TEXT_TOKENS = (
+    "--color-text-primary",
+    "--color-text-secondary",
+    "--color-text-muted",
+    "--essay-text",
+    "--accent",
+    "--accent-bright",
+    "--series",
+    "--series-bright",
+    "--cat-explainer",
+    "--cat-technical",
+    "--cat-extra",
+    "--cat-subquest",
+)
+# Fills that carry a label, each paired with a `-on` token for that label.
+LABEL_FILL_TOKENS = (
+    "--accent",
+    "--series",
+    "--cat-explainer",
+    "--cat-technical",
+    "--cat-extra",
+    "--cat-subquest",
+)
+WCAG_AA_BODY_TEXT = 4.5
+
+
+def palette_tokens(css, selector):
+    """Custom properties declared in the first rule whose selector is `selector`."""
+    start = css.index(f"{selector} {{")
+    return dict(re.findall(r"(--[\w-]+):\s*([^;]+);", css[start : css.index("}", start)]))
+
+
+def relative_luminance(hex_colour):
+    channels = (int(hex_colour[index : index + 2], 16) / 255 for index in (1, 3, 5))
+    linear = [
+        value / 12.92 if value <= 0.03928 else ((value + 0.055) / 1.055) ** 2.4
+        for value in channels
+    ]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def contrast_ratio(first, second):
+    lighter, darker = sorted((relative_luminance(first), relative_luminance(second)), reverse=True)
+    return (lighter + 0.05) / (darker + 0.05)
 
 
 @override_settings(
@@ -109,6 +162,89 @@ class PublicDesignTemplateTest(TestCase):
         self.assertContains(response, 'aria-controls="postOutline"')
         self.assertContains(response, 'id="postOutline"')
         self.assertContains(response, 'class="post-nav"')
+        self.assertContains(response, '<body class="page--article page--has-contents">')
+        self.assertContains(response, 'class="post-actions"')
+
+    def test_header_menu_is_the_same_four_links_on_every_page(self):
+        for path in ("/", "/writing/", "/representative-note/", "/about/"):
+            html = self.get_page(path).content.decode("utf-8")
+            header = html[html.index('<header class="site-header">') : html.index("</header>")]
+
+            self.assertIn('href="/writing/"', header, path)
+            self.assertIn('href="/essays/"', header, path)
+            self.assertIn('href="/about/"', header, path)
+            self.assertNotIn("applets", header, path)
+            self.assertNotIn("rss", header, path)
+
+        about = self.get_page("/about/")
+        self.assertContains(
+            about,
+            '<a class="site-nav__link" href="/about/" aria-current="page">about</a>',
+            html=True,
+        )
+
+    def test_not_found_page_keeps_the_header_menu_and_the_server_error_stays_static(self):
+        response = self.get_page("/no-such-page/")
+        html = response.content.decode("utf-8")
+        header = html[html.index('<header class="site-header">') : html.index("</header>")]
+
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('class="site-nav"', header)
+        for href in ("/writing/", "/essays/", "/about/"):
+            self.assertIn(f'href="{href}"', header)
+        # Nothing is the current section on a page that does not exist.
+        self.assertNotIn("aria-current", header)
+
+        # A server error keeps a shell that needs no site data.
+        self.assertNotIn("site-nav", render_to_string("500.html", {}))
+
+    def test_a_post_with_contents_opens_the_menu_with_its_drawer_on_phones(self):
+        plain = BlogPage(
+            title="A note without headings",
+            slug="plain-note",
+            date=date(2026, 7, 29),
+            body=[("markdown", "One paragraph and no contents list.")],
+        )
+        self.index.add_child(instance=plain)
+        plain.save_revision().publish()
+
+        def drawer(path):
+            html = self.get_page(path).content.decode("utf-8")
+            return html[html.index('<aside class="post-sidebar"') : html.index("</aside>")]
+
+        with_contents = drawer("/representative-note/")
+        self.assertIn('class="site-nav"', with_contents)
+        for href in ("/writing/", "/essays/", "/about/"):
+            self.assertIn(f'href="{href}"', with_contents)
+        self.assertLess(
+            with_contents.index('class="site-nav"'),
+            with_contents.index('class="post-rail__section post-toc"'),
+        )
+        # A post without a contents control keeps the menu in its header at every width.
+        self.assertNotIn("site-nav", drawer("/plain-note/"))
+
+        css = (Path(settings.BASE_DIR) / "static" / "css" / "site.css").read_text(encoding="utf-8")
+        wide = css[: css.index("@media (max-width: 1099px)")]
+        phone = css[css.index("@media (max-width: 699px)") : css.index("@media (max-width: 359px)")]
+        # The drawer copy shows only where the header gives its menu up for the contents control.
+        self.assertRegex(wide, r"\.post-rail \.site-nav \{\s*display: none;")
+        self.assertRegex(phone, r"\.page--has-contents \.site-header \.site-nav \{\s*display: none;")
+        self.assertRegex(phone, r"\.post-rail \.site-nav \{\s*display: flex;")
+
+    def test_read_time_shows_the_deep_figure_only_when_it_differs(self):
+        plain = self.get_page("/representative-note/")
+        self.assertContains(plain, 'class="post-readtime__main"')
+        self.assertNotContains(plain, "post-readtime__deep")
+
+        BlogPage.objects.filter(pk=self.post.pk).update(
+            body_rendered_readtime_main="4 min",
+            body_rendered_readtime_deep="9 min",
+        )
+        self.assertContains(
+            self.get_page("/representative-note/"),
+            '<span class="post-readtime__deep">+9 min deep</span>',
+            html=True,
+        )
 
     def test_about_page_uses_the_static_content_composition(self):
         response = self.get_page("/about/")
@@ -117,7 +253,9 @@ class PublicDesignTemplateTest(TestCase):
         self.assertContains(response, 'class="content-page"')
         self.assertContains(response, 'class="content-page__body"')
         self.assertContains(response, "An independent technical notebook")
-        self.assertContains(response, 'class="content-page__rail"')
+        self.assertContains(response, '<p class="eyebrow">about</p>', html=True)
+        # The page is one column: the old side rail only repeated the site menu.
+        self.assertNotContains(response, "content-page__rail")
 
     def test_error_states_share_tokens_and_remain_noindex(self):
         context = {
@@ -139,6 +277,15 @@ class PublicDesignTemplateTest(TestCase):
         # ...but 500 keeps the shared default so the block override did not leak.
         self.assertIn("back to posts →", server_error)
         self.assertNotIn("browse writing →", server_error)
+
+        # Both render inside the shared site shell and offer more than one way out.
+        for rendered in (not_found, server_error):
+            self.assertIn('<body class="page--error">', rendered)
+            self.assertIn('class="site-header"', rendered)
+            self.assertIn('class="site-footer"', rendered)
+            self.assertIn('<h1 id="error-heading">', rendered)
+        self.assertIn('<a href="/essays/">essays →</a>', not_found)
+        self.assertIn('<a href="/">home →</a>', not_found)
 
     def test_katex_is_gated_to_math_posts_only(self):
         math_post = BlogPage(
@@ -246,6 +393,9 @@ class PublicDesignTemplateTest(TestCase):
         self.assertIn("--series-wash:", css)
         self.assertIn("--font-head:", css)
         self.assertIn("--measure-reading:", css)
+        self.assertIn("--font-serif:", css)
+        self.assertIn("--essay-column:", css)
+        self.assertIn(".page--essay .post-content", css)
         self.assertIn(":focus-visible", css)
         self.assertIn("@media (prefers-reduced-motion: reduce)", css)
         self.assertIn("@media (prefers-color-scheme: light)", css)
@@ -255,6 +405,25 @@ class PublicDesignTemplateTest(TestCase):
         self.assertNotIn("--color-surface-elevated", css)
         self.assertNotIn("background-image:", css)
         self.assertNotIn(".post-card:hover", css)
+
+    def test_palettes_keep_text_readable_on_every_surface(self):
+        css_path = Path(settings.BASE_DIR) / "static" / "css" / "site.css"
+        css = css_path.read_text(encoding="utf-8")
+        dark = palette_tokens(css, ":root")
+        light = palette_tokens(css, ':root[data-theme="light"]')
+
+        # The OS-preference block and the explicit theme are two copies of one palette.
+        self.assertEqual(light, palette_tokens(css, ':root:not([data-theme="dark"])'))
+
+        pairs = [(text, surface) for text in TEXT_TOKENS for surface in SURFACE_TOKENS]
+        pairs += [(f"{fill}-on", fill) for fill in LABEL_FILL_TOKENS]
+        for name, tokens in (("dark", dark), ("light", dark | light)):
+            for text, surface in pairs:
+                with self.subTest(palette=name, text=text, surface=surface):
+                    self.assertGreaterEqual(
+                        contrast_ratio(tokens[text], tokens[surface]),
+                        WCAG_AA_BODY_TEXT,
+                    )
 
     def test_applet_shell_supports_intrinsic_and_constrained_heights(self):
         static_dir = Path(settings.BASE_DIR) / "static"
@@ -291,6 +460,9 @@ class PublicDesignTemplateTest(TestCase):
             "ibm-plex-sans-500-latin.woff2",
             "ibm-plex-sans-600-latin.woff2",
             "ibm-plex-sans-700-latin.woff2",
+            "ibm-plex-serif-400-latin.woff2",
+            "ibm-plex-serif-400-italic-latin.woff2",
+            "ibm-plex-serif-600-latin.woff2",
         }
 
         self.assertTrue(expected_fonts.issubset({path.name for path in font_dir.glob("*.woff2")}))

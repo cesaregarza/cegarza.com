@@ -12,25 +12,50 @@
     <title>{% block error_title %}{% endblock %} | {{ site_name }}</title>
     <link rel="stylesheet" href="{% static 'css/site.css' %}">
 </head>
-<body class="error-page">
-    <a class="skip-link" href="#error-content">Skip to content</a>
-    <header class="error-header">
-        <a href="/" aria-label="{{ site_name }} home">
-            <strong>cegarza.com</strong>
-            <span>/ writing</span>
-        </a>
-    </header>
-    <main class="error-shell" id="error-content">
-        <div class="error-band">
-            <span>{% block error_code %}{% endblock %}</span>
-            <span aria-hidden="true">·</span>
-            <span>{% block error_label %}{% endblock %}</span>
-        </div>
-        <section class="error-state" aria-labelledby="error-heading">
-            <h1 id="error-heading">{% block error_heading %}{% endblock %}</h1>
-            <p>{% block error_message %}{% endblock %}</p>
-            {% block error_cta %}<a href="/">back to posts →</a>{% endblock %}
-        </section>
-    </main>
+<body class="page--error">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    {# Same shell as the rest of the site, written out here so a server error never depends on page context. #}
+    <div class="page-shell">
+        <header class="site-header">
+            <div class="container site-header__inner">
+                <a href="/" class="site-title" aria-label="{{ site_name }} home">
+                    <span class="site-title__primary">cegarza.com</span>
+                </a>
+                {% block error_navigation %}{% endblock %}
+            </div>
+        </header>
+
+        <main class="container site-main" id="main-content">
+            <div class="error-band">
+                <span>{% block error_code %}{% endblock %}</span>
+                <span aria-hidden="true">·</span>
+                <span>{% block error_label %}{% endblock %}</span>
+            </div>
+            <section class="error-state" aria-labelledby="error-heading">
+                <h1 id="error-heading">{% block error_heading %}{% endblock %}</h1>
+                <p>{% block error_message %}{% endblock %}</p>
+                <p class="error-state__links">
+                    {% block error_cta %}<a href="/">back to posts →</a>{% endblock %}
+                </p>
+            </section>
+        </main>
+
+        <footer class="site-footer">
+            <div class="container site-footer__inner">
+                <p class="site-footer__identity">
+                    <span>cegarza.com</span>
+                    {% if site_author %}
+                        <span aria-hidden="true">·</span>
+                        <span class="site-footer__proper">{{ site_author }}</span>
+                    {% endif %}
+                </p>
+                <nav class="site-footer__nav" aria-label="Footer navigation">
+                    <a href="/feed/">rss</a>
+                    <a href="/feed/atom/">atom</a>
+                    <a href="https://github.com/cesaregarza">github</a>
+                </nav>
+            </div>
+        </footer>
+    </div>
 </body>
 </html>

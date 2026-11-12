@@ -1,8 +1,18 @@
 {% extends "error_base.html" %}
 
 {% block error_title %}404 - Page Not Found{% endblock %}
+{# A missing page is still served with the site's data, so it keeps the header menu. No section is marked current. #}
+{% block error_navigation %}
+    <div class="site-header__right">
+        {% include "includes/site_nav.html" %}
+    </div>
+{% endblock %}
 {% block error_code %}404{% endblock %}
 {% block error_label %}page not found{% endblock %}
 {% block error_heading %}There is nothing at this address.{% endblock %}
 {% block error_message %}The page may have moved, or the link may no longer be current.{% endblock %}
-{% block error_cta %}<a href="{{ site_writing_url|default:'/writing/' }}">browse writing →</a>{% endblock %}
+{% block error_cta %}
+    <a href="{{ site_writing_url|default:'/writing/' }}">browse writing →</a>
+    <a href="{{ site_essays_url|default:'/essays/' }}">essays →</a>
+    <a href="{{ site_home_url|default:'/' }}">home →</a>
+{% endblock %}
