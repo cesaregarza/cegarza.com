@@ -244,6 +244,10 @@
                             {% elif post_series.series.description %}
                                 <p>{{ post_series.series.description }}</p>
                             {% endif %}
+                            {% if essay_archive_url %}
+                                {# An essay's page navigation moves between essays, so the way back to the series is here. #}
+                                <a href="{{ post_series.url }}">all parts →</a>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </section>
@@ -251,7 +255,8 @@
         {% endblock %}
 
         <nav class="post-nav" aria-label="Adjacent posts">
-            {% if series_previous %}
+            {# An essay moves between essays here, even inside a series: the band and end card carry the series. #}
+            {% if series_previous and not essay_archive_url %}
                 <a class="post-nav__item" href="{{ series_previous.url }}">
                     <span>← part {{ series_previous.number|stringformat:"02d" }}</span>
                     <strong>{{ series_previous.page.title }}</strong>
@@ -262,7 +267,7 @@
                     <strong>{{ previous_post.title }}</strong>
                 </a>
             {% endif %}
-            {% if post_series %}
+            {% if post_series and not essay_archive_url %}
                 {# The series end card above links the next part, so this slot leads back to the series. #}
                 <a class="post-nav__item post-nav__item--next" href="{{ post_series.url }}">
                     <span>series index →</span>

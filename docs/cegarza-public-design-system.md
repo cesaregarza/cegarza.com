@@ -62,11 +62,14 @@ separators only, never for words a reader is meant to read.
 - `.post-series-band`, `.post-header`, `.post-rail`, `.post-toc`,
   `.post-actions`, `.post-series-end`, and `.post-nav` form long-form posts.
   In a series the end card links the next part and `.post-nav` links back to
-  the series, so the same destination is never offered twice.
+  the series, so the same destination is never offered twice. An essay in a
+  series is the exception described next.
 - `.page--essay` is the essay variant of a post, applied to posts tagged
   `essays`. It drops the rail, contents drawer, and reading status for one
   centred `--essay-column` column, sets the body in the serif, and moves the
-  byline under the title. Previous and next stay within the essays.
+  byline under the title. Previous and next stay within the essays, also for
+  an essay that is part of a series: its band and end card carry the series
+  links, and `.post-nav` never leaves the essays.
 - `.takeaway`, `.collapsible-block`, `.glossary-tooltip`, `.code-block`,
   `.applet-embed`, tables, and blockquotes share the same two-pixel-or-less
   radius and rule system.

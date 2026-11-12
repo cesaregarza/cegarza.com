@@ -1,7 +1,7 @@
 from django.test import TestCase, override_settings
 from wagtail.models import PageViewRestriction, Site
 
-from blog.models import BlogIndexPage, BlogPage, BlogTag
+from blog.models import BlogIndexPage, BlogPage, BlogSeries, BlogSeriesMembership, BlogTag
 
 
 @override_settings(
@@ -46,6 +46,12 @@ class EssaysArchiveTest(TestCase):
 
     def get(self, path):
         return self.client.get(path, secure=True, HTTP_HOST="essays.test")
+
+    def section(self, response, opening, closing):
+        """The rendered markup from `opening` up to the next `closing`."""
+        rendered = response.content.decode("utf-8")
+        start = rendered.index(opening)
+        return rendered[start : rendered.index(closing, start)]
 
     def test_archive_only_lists_this_sites_tagged_live_public_posts(self):
         self.add_post("draft-essay", publish=False)
@@ -213,6 +219,52 @@ class EssaysArchiveTest(TestCase):
         self.assertEqual(note.context["previous_post"].slug, "published-essay")
         self.assertEqual(note.context["next_post"].slug, "second-essay")
         self.assertNotContains(note, "previous essay")
+        self.assertNotContains(note, "next essay")
+
+    def test_an_essay_in_a_series_still_moves_between_essays(self):
+        series = BlogSeries.objects.create(
+            title="Mixed series",
+            slug="mixed-series",
+            status=BlogSeries.Status.ONGOING,
+        )
+        series_essay = self.add_post("series-essay")
+        self.add_post("later-essay")
+        BlogSeriesMembership.objects.create(
+            series=series,
+            page=self.note,
+            sort_order=10,
+            is_primary=True,
+        )
+        BlogSeriesMembership.objects.create(
+            series=series,
+            page=series_essay,
+            sort_order=20,
+            is_primary=True,
+        )
+
+        essay = self.get("/series-essay/")
+        note = self.get("/technical-note/")
+        adjacent = self.section(essay, '<nav class="post-nav"', "</nav>")
+        end_card = self.section(essay, '<section class="post-series-end"', "</section>")
+
+        for series_navigation in ("Technical note", "← part", "series index", "/series/mixed-series/"):
+            self.assertNotIn(series_navigation, adjacent)
+        self.assertIn("← previous essay", adjacent)
+        self.assertIn("Published essay", adjacent)
+        self.assertIn("next essay →", adjacent)
+        self.assertIn("Later essay", adjacent)
+        self.assertEqual(essay.context["previous_post"].slug, "published-essay")
+        self.assertEqual(essay.context["next_post"].slug, "later-essay")
+
+        # The series keeps its own navigation in the band and the end card.
+        self.assertContains(essay, "part 02 of 02")
+        self.assertIn("Mixed series</span>, for now", end_card)
+        self.assertIn('<a href="/series/mixed-series/">all parts →</a>', end_card)
+
+        # The technical part of the same series is still navigated as a series part.
+        self.assertNotIn("previous_post", note.context)
+        self.assertNotIn("next_post", note.context)
+        self.assertContains(note, "series index →")
         self.assertNotContains(note, "next essay")
 
     def test_essays_keep_their_post_urls_and_appear_in_all_writing_and_feeds(self):
