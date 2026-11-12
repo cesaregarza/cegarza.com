@@ -32,7 +32,7 @@ Tokens live at the top of `src/static/css/site.css`.
 | Text | `--color-text-primary`, `--color-text-secondary`, `--color-text-muted`, `--color-text-disabled` |
 | Active state | `--accent*` |
 | Series | `--series*` |
-| Callouts | `--cat-explainer`, `--cat-technical`, `--cat-extra`, `--cat-subquest` |
+| Callouts | `--cat-explainer`, `--cat-technical`, `--cat-extra`, `--cat-subquest`, each with a `-on` partner for a label set on that colour |
 | Type | `--font-ui`, `--font-head`, `--font-mono`, `--font-serif`, `--measure-reading` |
 | Chrome sizes | `--text-chrome` for mono navigation, metadata, and labels; `--text-micro` for the smallest status text |
 | Essays | `--essay-column`, `--essay-text` |
@@ -43,6 +43,11 @@ document to the light palette, and a `data-theme="light|dark"` attribute on
 callout colours, because the dark values are too pale to read on a light
 surface. All four font families are self-hosted in `src/static/fonts/` with
 `font-display: swap`.
+
+Every text, accent, series, and callout colour reads at 4.5:1 or better on
+every surface of its palette, and so does each `-on` colour on its fill.
+`--color-text-disabled` is the exception: it is for inactive controls and
+separators only, never for words a reader is meant to read.
 
 ## Reusable primitives
 

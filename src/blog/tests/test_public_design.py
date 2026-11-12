@@ -1,3 +1,4 @@
+import re
 from datetime import date
 from pathlib import Path
 
@@ -9,6 +10,58 @@ from wagtail.images.tests.utils import get_test_image_file
 from wagtail.models import Site
 
 from blog.models import BlogIndexPage, BlogPage, ContentPage
+
+SURFACE_TOKENS = (
+    "--color-bg",
+    "--color-surface",
+    "--color-surface-2",
+    "--color-surface-sunk",
+    "--color-surface-rail",
+)
+TEXT_TOKENS = (
+    "--color-text-primary",
+    "--color-text-secondary",
+    "--color-text-muted",
+    "--essay-text",
+    "--accent",
+    "--accent-bright",
+    "--series",
+    "--series-bright",
+    "--cat-explainer",
+    "--cat-technical",
+    "--cat-extra",
+    "--cat-subquest",
+)
+# Fills that carry a label, each paired with a `-on` token for that label.
+LABEL_FILL_TOKENS = (
+    "--accent",
+    "--series",
+    "--cat-explainer",
+    "--cat-technical",
+    "--cat-extra",
+    "--cat-subquest",
+)
+WCAG_AA_BODY_TEXT = 4.5
+
+
+def palette_tokens(css, selector):
+    """Custom properties declared in the first rule whose selector is `selector`."""
+    start = css.index(f"{selector} {{")
+    return dict(re.findall(r"(--[\w-]+):\s*([^;]+);", css[start : css.index("}", start)]))
+
+
+def relative_luminance(hex_colour):
+    channels = (int(hex_colour[index : index + 2], 16) / 255 for index in (1, 3, 5))
+    linear = [
+        value / 12.92 if value <= 0.03928 else ((value + 0.055) / 1.055) ** 2.4
+        for value in channels
+    ]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def contrast_ratio(first, second):
+    lighter, darker = sorted((relative_luminance(first), relative_luminance(second)), reverse=True)
+    return (lighter + 0.05) / (darker + 0.05)
 
 
 @override_settings(
@@ -304,6 +357,25 @@ class PublicDesignTemplateTest(TestCase):
         self.assertNotIn("--color-surface-elevated", css)
         self.assertNotIn("background-image:", css)
         self.assertNotIn(".post-card:hover", css)
+
+    def test_palettes_keep_text_readable_on_every_surface(self):
+        css_path = Path(settings.BASE_DIR) / "static" / "css" / "site.css"
+        css = css_path.read_text(encoding="utf-8")
+        dark = palette_tokens(css, ":root")
+        light = palette_tokens(css, ':root[data-theme="light"]')
+
+        # The OS-preference block and the explicit theme are two copies of one palette.
+        self.assertEqual(light, palette_tokens(css, ':root:not([data-theme="dark"])'))
+
+        pairs = [(text, surface) for text in TEXT_TOKENS for surface in SURFACE_TOKENS]
+        pairs += [(f"{fill}-on", fill) for fill in LABEL_FILL_TOKENS]
+        for name, tokens in (("dark", dark), ("light", dark | light)):
+            for text, surface in pairs:
+                with self.subTest(palette=name, text=text, surface=surface):
+                    self.assertGreaterEqual(
+                        contrast_ratio(tokens[text], tokens[surface]),
+                        WCAG_AA_BODY_TEXT,
+                    )
 
     def test_applet_shell_supports_intrinsic_and_constrained_heights(self):
         static_dir = Path(settings.BASE_DIR) / "static"
